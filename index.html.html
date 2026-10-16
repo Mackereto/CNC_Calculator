@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>เครื่องคำนวณรอบสปินเดิลและฟีด CNC Milling</title>
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#e9ecee;--panel:#ffffff;--panel-2:#f3f5f6;--ink:#14191d;--ink-2:#4a555d;--line:#c9d0d5;
+  --accent:#0b6e79;--accent-ink:#ffffff;--readout-bg:#10161a;--readout-ink:#9be7e0;--readout-dim:#6f8a8d;
+  --warn-bg:#fff1dc;--warn-ink:#7a3d00;--warn-line:#e6b36b;
+  --bad-bg:#fde4e2;--bad-ink:#8a1f17;--bad-line:#e59a92;
+  --ok-bg:#e3f4f1;--ok-ink:#0b5a62;--ok-line:#9fd3cc;
+  --font:system-ui,"Segoe UI","Leelawadee UI","Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1316;--panel:#171e22;--panel-2:#1e272c;--ink:#e8eef0;--ink-2:#9fb0b6;--line:#2e3a40;
+    --accent:#4fc3cc;--accent-ink:#06181a;--readout-bg:#080c0e;--readout-ink:#9be7e0;--readout-dim:#5f787b;
+    --warn-bg:#3a2a12;--warn-ink:#ffd9a1;--warn-line:#8a6226;
+    --bad-bg:#3d1714;--bad-ink:#ffc2bb;--bad-line:#8a3a31;
+    --ok-bg:#112d2f;--ok-ink:#a4e6e0;--ok-line:#2c6a6e;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1316;--panel:#171e22;--panel-2:#1e272c;--ink:#e8eef0;--ink-2:#9fb0b6;--line:#2e3a40;
+  --accent:#4fc3cc;--accent-ink:#06181a;--readout-bg:#080c0e;--readout-ink:#9be7e0;--readout-dim:#5f787b;
+  --warn-bg:#3a2a12;--warn-ink:#ffd9a1;--warn-line:#8a6226;
+  --bad-bg:#3d1714;--bad-ink:#ffc2bb;--bad-line:#8a3a31;
+  --ok-bg:#112d2f;--ok-ink:#a4e6e0;--ok-line:#2c6a6e;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.6}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 40px}
+header{margin-bottom:18px}
+header h1{margin:0 0 4px;font-size:1.45rem;font-weight:600}
+header p{margin:0;color:var(--ink-2);font-size:.95rem}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+@media(min-width:860px){.grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px}
+.panel h2{margin:0 0 12px;font-size:1rem;font-weight:600}
+.seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-bottom:14px}
+.seg button{flex:1;padding:9px 8px;border:0;background:var(--panel-2);color:var(--ink-2);font:inherit;font-size:.93rem;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px 12px}
+.field{display:flex;flex-direction:column;gap:3px;min-width:0}
+.field label{font-size:.92rem;color:var(--ink-2)}
+.field input,.field select{width:100%;min-width:0;padding:10px 10px;font-size:1rem;border:1px solid var(--line);border-radius:4px;background:var(--panel-2);color:var(--ink);font:inherit;font-variant-numeric:tabular-nums}
+.field input.edited{border-color:var(--accent)}
+.field input:focus-visible,.field select:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.field small{color:var(--ink-2);font-size:.85rem}
+.full{grid-column:1/-1}
+.sep{height:1px;background:var(--line);margin:16px 0}
+.btn{padding:8px 12px;border-radius:4px;border:1px solid var(--accent);background:transparent;color:var(--accent);font:inherit;font-size:.88rem;cursor:pointer}
+.info{background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:10px 12px;font-size:.88rem;color:var(--ink-2);margin-top:12px}
+.info b{color:var(--ink);font-weight:600}
+details summary{cursor:pointer;font-weight:600;font-size:.95rem;padding:2px 0}
+details[open] summary{margin-bottom:10px}
+.readout{background:var(--readout-bg);color:var(--readout-ink);border-radius:6px;padding:16px;font-variant-numeric:tabular-nums}
+.readout .line{display:flex;align-items:baseline;gap:12px;padding:6px 0}
+.readout .line+.line{border-top:1px solid rgba(155,231,224,.18)}
+.readout .k{width:2.4rem;font-size:1.2rem;color:var(--readout-dim);font-weight:500}
+.readout .v{font-size:clamp(2rem,9vw,2.9rem);font-weight:500;line-height:1.1;flex:1;word-break:break-all}
+.readout .u{font-size:.9rem;color:var(--readout-dim);white-space:nowrap}
+.gcode{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(155,231,224,.18);font-size:1.05rem}
+.gcode code{font-family:var(--font);font-variant-numeric:tabular-nums;color:var(--readout-ink)}
+.copy{padding:6px 12px;border-radius:4px;border:1px solid var(--readout-dim);background:transparent;color:var(--readout-ink);font:inherit;font-size:.85rem;cursor:pointer}
+dl{margin:14px 0 0;display:grid;grid-template-columns:1fr auto;gap:6px 14px;font-variant-numeric:tabular-nums}
+dt{color:var(--ink-2)}
+dd{margin:0;text-align:right;font-weight:500}
+.note{margin-top:10px;padding:10px 12px;border-radius:4px;font-size:.9rem;border:1px solid var(--warn-line);background:var(--warn-bg);color:var(--warn-ink)}
+.note.bad{border-color:var(--bad-line);background:var(--bad-bg);color:var(--bad-ink)}
+.note.ok{border-color:var(--ok-line);background:var(--ok-bg);color:var(--ok-ink)}
+.note.plain{border-color:var(--line);background:var(--panel-2);color:var(--ink-2)}
+.hidden{display:none}
+.foot{margin-top:18px;color:var(--ink-2);font-size:.85rem}
+.foot code{font-family:var(--font);background:var(--panel-2);padding:1px 5px;border-radius:3px}
+.tbtn{float:right;background:none;border:1px solid var(--line);color:var(--ink-2);border-radius:4px;font:inherit;font-size:.8rem;padding:3px 9px;cursor:pointer}
+nav.tabs{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin:0 0 16px;max-width:520px}
+nav.tabs button{flex:1;padding:9px 10px;border:0;background:var(--panel);color:var(--ink-2);font:inherit;font-size:.93rem;cursor:pointer}
+nav.tabs button+button{border-left:1px solid var(--line)}
+nav.tabs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.unitwrap{display:flex;gap:6px;min-width:0}.unitwrap input{flex:1 1 auto;width:auto!important;min-width:0}.unitbtn{flex:0 0 auto;padding:0 10px;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:4px;font:inherit;font-size:.85rem;cursor:pointer;white-space:nowrap}
+.refp{color:var(--ink-2);font-size:.92rem;margin:0 0 10px}
+.refp b{color:var(--ink)}
+.tblwrap{overflow-x:auto;margin:6px 0 18px;border:1px solid var(--line);border-radius:4px}
+table.ref{border-collapse:collapse;width:100%;font-size:.92rem;font-variant-numeric:tabular-nums}
+table.ref th,table.ref td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+table.ref th{background:var(--panel-2);color:var(--ink);font-weight:600;position:sticky;top:0}
+table.ref td:first-child,table.ref th:first-child{text-align:left}
+table.ref tr:last-child td{border-bottom:0}
+h3.ref{font-size:.98rem;margin:18px 0 4px}
+.src a{color:var(--accent);word-break:break-all}
+@media print{nav.tabs,#viewCalc,.tbtn,#printRef{display:none!important}#viewRef{display:block!important}body{background:#fff}.panel{border:0}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <button class="tbtn" id="theme" type="button" aria-label="สลับโหมดสว่าง/มืด">สลับธีม</button>
+    <h1>เครื่องคำนวณรอบสปินเดิล (S) และอัตราป้อน (F)</h1>
+    <p>เลือกวัสดุ ชนิดดอก และขนาดดอก ระบบจะเติม Vc และ fz ที่แนะนำตามแคตตาล็อก OSG (เหล็ก) หรือ Harvey Tool (ไนลอน/พลาสติก) ให้ แก้เองได้ และจะเตือนเมื่อค่าสูงหรือต่ำเกินไป</p>
+  </header>
+
+  <nav class="tabs" aria-label="เลือกหน้า"><button type="button" id="tabCalc" aria-pressed="true">เครื่องคำนวณ</button><button type="button" id="tabRef" aria-pressed="false">ตารางอ้างอิงและที่มา</button></nav>
+  <div id="viewCalc">
+  <div class="grid">
+    <section class="panel" aria-labelledby="in-h">
+      <h2 id="in-h">ค่าที่กรอก</h2>
+      <div class="seg" role="group" aria-label="โหมดการคำนวณ">
+        <button type="button" id="m1" aria-pressed="true">จาก Vc, fz → S, F</button>
+        <button type="button" id="m2" aria-pressed="false">ตรวจค่าเดิม S, F → Vc, fz</button>
+      </div>
+
+      <div class="row">
+        <div class="field full"><label for="mat">วัสดุงาน</label>
+          <select id="mat">
+            <option value="0" data-h="ประมาณ ≤30 HRC">SCM440 ก่อนชุบ (อบอ่อน)</option>
+            <option value="0" data-h="ประมาณ 28–34 HRC">SCM440 Pre-hardened</option>
+            <option value="1" data-h="ประมาณ 48–55 HRC">SCM440 ชุบแข็ง</option>
+            <option value="1" data-h="ประมาณ 48–52 HRC">SKD61 ชุบแข็ง</option>
+            <option value="2" data-h="ประมาณ 58–62 HRC">SKD11 ชุบแข็ง</option>
+            <option value="0" data-h="ประมาณ ≤255 HB">SKD61 / SKD11 อบอ่อน</option>
+            <option value="0" data-h="ประมาณ 37–43 HRC">NAK80</option>
+            <option value="0" data-h="ประมาณ 160–220 HB">S45C / S50C</option>
+            <option value="2" data-h="ประมาณ 60–62 HRC">DC53 ชุบแข็ง</option>
+            <option value="1" data-h="ประมาณ 50–54 HRC">SUS420J2 ชุบแข็ง</option>
+            <option value="3" data-h="ประมาณ 62–65 HRC">SKH51 (HSS) ชุบแข็ง</option>
+            <option value="4" data-h="พลาสติก ไม่ใช่โลหะ (Harvey Tool จัดอยู่ในกลุ่มพลาสติกไม่เติมสาร ความแข็ง Rockwell R 100–150)">Nylon (ไนลอนหล่อ MC สีฟ้า) · พลาสติก</option>
+            <option value="custom" data-h="">อื่น ๆ (เลือกช่วงความแข็งเอง)</option>
+          </select><small id="hMat"></small></div>
+        <div class="field full"><label for="band">ช่วงความแข็ง (ปรับเองได้)</label>
+          <select id="band">
+            <option value="0">ไม่เกิน 45 HRC (เช่น SCM440 ก่อนชุบ)</option>
+            <option value="1">45–55 HRC</option>
+            <option value="2">55–62 HRC</option>
+            <option value="3">62–66 HRC</option>
+            <option value="4">Nylon / พลาสติก · เก็บผิว (ae 0.10D, ap 3D)</option>
+            <option value="5">Nylon / พลาสติก · กึ่งหยาบ (ae 0.35D, ap 1D)</option>
+          </select></div>
+        <div class="field"><label for="tool">ชนิดดอก</label>
+          <select id="tool">
+            <option value="sq">ปลายเรียบ (Square)</option>
+            <option value="cr">รัศมีมุม (Corner radius)</option>
+            <option value="ball">ปลายบอล (Ball)</option>
+          </select></div>
+        <div class="field" id="fR"><label for="r">รัศมีมุม r (mm)</label><input id="r" type="number" inputmode="decimal" step="any" min="0" value="0.5"></div>
+        <div class="field" id="fOp"><label for="op">ลักษณะงาน / ตารางดอกบอล</label>
+          <select id="op"><option value="finish2">งานเก็บผิว · ดอก 2 ฟัน (AE-BD-H)</option><option value="finish">งานเก็บผิว · ดอก 4 ฟัน (AE-BM-H)</option><option value="rough">งานหยาบ · ดอก 4 ฟัน (AE-BM-H)</option></select></div>
+        <div class="field"><label for="L">ระยะยื่นดอก L (mm)</label><input id="L" type="number" inputmode="decimal" step="any" min="0" placeholder="เว้นว่าง = ไม่เกิน 4D"><small id="hL"></small></div>
+        <div class="field"><label for="sf">ตัวคูณความปลอดภัยของ Vc</label><select id="sf"><option value="0.7">เริ่มทดลอง 70%</option><option value="0.85" selected>ระมัดระวัง 85%</option><option value="1">ค่าแคตตาล็อก 100%</option></select><small>ลดเฉพาะ Vc ไม่ลด fz เป็นหลักปฏิบัติของผู้จัดทำ ไม่ได้มาจากแคตตาล็อก</small></div>
+        <div class="field"><label for="coat">สารเคลือบดอก (ข้อมูลประกอบ)</label><select id="coat"><option value="">ไม่ทราบ</option><option value="tialn">TiAlN</option><option value="altin">AlTiN (Al สูง) / AlTiSiN</option><option value="alcrn">AlCrN</option><option value="ticn">TiCN</option><option value="dlc">DLC</option></select><small>ไม่ปรับค่าแนะนำ ใช้เตือนเมื่อไม่เหมาะกับช่วงความแข็ง</small></div>
+        <div class="field"><label for="D">เส้นผ่านศูนย์กลางดอก D (mm)</label><input id="D" type="number" inputmode="decimal" step="any" min="0" value="6"></div>
+        <div class="field"><label for="z">จำนวนฟัน z</label><input id="z" type="number" inputmode="numeric" step="1" min="1" value="4"><small id="hZ"></small></div>
+        <div class="field"><label for="aeIn">ระยะกินข้างที่ใช้จริง ae</label><div class="unitwrap"><input id="aeIn" type="number" inputmode="decimal" step="any" min="0" value="60"><button type="button" class="unitbtn" id="aeUnit" aria-label="สลับหน่วย ae ระหว่าง % ของ D กับ mm">% ของ D</button></div><input id="ae" type="hidden" value="60"><small id="hAe"></small></div>
+        <div class="field"><label for="ap">ความลึกต่อชั้น ap (mm)</label><input id="ap" type="number" inputmode="decimal" step="any" min="0" value="0.1"><small>ใช้ตรวจกับเงื่อนไขแคตตาล็อกและนับจำนวนชั้น</small></div>
+        <div class="field full"><label for="preset">ค่าจากรายงาน (ตาราง 3.1)</label>
+          <select id="preset">
+            <option value="">— ไม่ใช้ —</option>
+            <option value="1,4,120,0.01,0">C01 · D 1 · ก่อนชุบ</option>
+            <option value="3,4,120,0.03,0">C02 · D 3 · ก่อนชุบ</option>
+            <option value="5,4,120,0.05,0">C03 · D 5 · ก่อนชุบ</option>
+            <option value="8,6,120,0.08,0">C04 · D 8 · ก่อนชุบ</option>
+            <option value="12,6,120,0.12,0">C05 · D 12 · ก่อนชุบ</option>
+            <option value="1,4,70,0.007,2">C06 · D 1 · หลังชุบ</option>
+            <option value="3,4,70,0.021,2">C07 · D 3 · หลังชุบ</option>
+            <option value="5,4,70,0.035,2">C08 · D 5 · หลังชุบ</option>
+            <option value="8,6,70,0.056,2">C09 · D 8 · หลังชุบ</option>
+            <option value="12,6,70,0.084,2">C10 · D 12 · หลังชุบ</option>
+          </select></div>
+
+        <div class="field m1"><label for="Vc" id="lblVc">ความเร็วตัด Vc (m/min)</label><input id="Vc" type="number" inputmode="decimal" step="any" min="0"><small id="hVc"></small></div>
+        <div class="field m1"><label for="fz">fz ที่จะตั้ง (mm/tooth)</label><input id="fz" type="number" inputmode="decimal" step="any" min="0"><small id="hfz"></small></div>
+        <div class="field m1"><label for="Vc0">Vc เดิมที่ใช้อยู่ (m/min, ไม่บังคับ)</label><input id="Vc0" type="number" inputmode="decimal" step="any" min="0" placeholder="ใช้เตือนอายุดอก"></div>
+
+        <div class="field m2 hidden"><label for="S">รอบที่ตั้งอยู่ S (rpm)</label><input id="S" type="number" inputmode="decimal" step="any" min="0" value="8000"></div>
+        <div class="field m2 hidden"><label for="F">อัตราป้อนที่ตั้งอยู่ F (mm/min)</label><input id="F" type="number" inputmode="decimal" step="any" min="0" value="900"></div>
+      </div>
+      <div style="margin-top:12px" class="m1"><button class="btn" id="reset" type="button">ใช้ค่าแนะนำ</button></div>
+      <div class="info" id="catInfo"></div>
+
+      <div class="sep"></div>
+      <details open>
+        <summary>ขีดจำกัดเครื่องจักร</summary>
+        <div class="row">
+          <div class="field"><label for="maxrpm">รอบสูงสุดของเครื่อง (rpm)</label><input id="maxrpm" type="number" inputmode="decimal" step="any" min="0" value="24000"></div>
+          <div class="field"><label for="cap">เพดานรอบที่โรงงานกำหนด (%)</label><input id="cap" type="number" inputmode="decimal" step="any" min="1" max="100" value="80"></div>
+          <div class="field full"><label for="maxf">อัตราป้อนสูงสุด (mm/min)</label><input id="maxf" type="number" inputmode="decimal" step="any" min="0" placeholder="เว้นว่างถ้ายังไม่ทราบ"><small>ถ้ากรอก จะเตือนเมื่อ F เกินค่านี้</small></div>
+        </div>
+      </details>
+
+      <div class="sep"></div>
+      <details id="timeBox">
+        <summary>เวลาเดินมีดเชิงทฤษฎี (งานปาดผิว)</summary>
+        <div class="row">
+          <div class="field"><label for="A">ความยาวแนวเดินมีด A (mm)</label><input id="A" type="number" inputmode="decimal" step="any" min="0" value="50"></div>
+          <div class="field"><label for="B">ความกว้างผิวงาน B (mm)</label><input id="B" type="number" inputmode="decimal" step="any" min="0" value="50"></div>
+          <div class="field"><label for="H">ความลึกรวมที่ต้องกัด H (mm)</label><input id="H" type="number" inputmode="decimal" step="any" min="0" placeholder="เว้นว่าง = 1 ชั้น"></div>
+          <div class="field"><label for="F0">F เดิมเพื่อเทียบ (mm/min)</label><input id="F0" type="number" inputmode="decimal" step="any" min="0" placeholder="ไม่บังคับ"></div>
+        </div>
+        <small style="display:block;margin-top:8px;color:var(--ink-2)">ใช้ ae และ ap ตามช่องด้านบน จำนวนชั้น = H ÷ ap ปัดขึ้น ไม่นับเวลาเข้า–ออกดอก การเคลื่อนที่เร็ว การเร่ง/ลดความเร็ว และการเปลี่ยนดอก</small>
+      </details>
+    </section>
+
+    <section class="panel" aria-labelledby="out-h">
+      <h2 id="out-h">ผลลัพธ์</h2>
+      <div id="out" aria-live="polite">
+        <div class="readout">
+          <div class="line"><span class="k" id="k1">S</span><span class="v" id="v1">—</span><span class="u" id="u1">rpm</span></div>
+          <div class="line"><span class="k" id="k2">F</span><span class="v" id="v2">—</span><span class="u" id="u2">mm/min</span></div>
+          <div class="gcode"><code id="gcode">—</code><button class="copy" id="copy" type="button">คัดลอก</button></div>
+        </div>
+        <dl id="detail"></dl>
+        <div id="notes"></div>
+        <div id="timeOut" class="hidden">
+          <div class="sep"></div>
+          <h2 style="margin-bottom:6px">เวลาเดินมีดเชิงทฤษฎี</h2>
+          <dl id="timeDl"></dl>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <p class="foot">ค่าแนะนำดอกปลายเรียบและรัศมีมุมมาจากแคตตาล็อก OSG A Brand AE-MS-H / AE-CR-MS-H (Side Milling, หน้า 1348) ดอกบอลมาจาก AE-BM-H (หน้า 1467 งานหยาบ, 1468 งานเก็บผิว ขนาด 2–12 mm ประมาณค่าระหว่างขนาด) ดอกบอลและรัศมีมุมคิดรอบจาก Deff ให้ได้ Vc ที่จุดสัมผัสเท่าตาราง และปรับ fz ให้ความหนาเศษเท่าเงื่อนไขตาราง (สูงสุด 2 เท่า) · Deff บอล = 2√(ap(D−ap)), Deff รัศมีมุม = D − 2r + 2√(2r·ap − ap²) เมื่อ ap < r · scallop = R − √(R² − (ae/2)²) · ดอกปลายเรียบ: Vc ค่ากลางของช่วง และ fz = 1.0% ของ D (ไม่เกิน 55 HRC), 0.7% (55–62 HRC), 0.6% (62–66 HRC) ที่ ap = 1.5D (62–66 HRC ใช้ 1D) และ ae ตามตาราง · ปรับ fz ตาม ae จริงด้วย <code>k = 2√(r − r²)</code> เมื่อ r = ae/D &lt; 0.5 (r ≥ 0.5 ใช้ k = 1) และ <code>fz ตั้ง = fz แนะนำ × k(ae ตาราง) / k(ae จริง)</code> · <code>n = 1000·Vc / (π·D)</code> · <code>Vf = fz × z × n</code> · <code>N = max(1, ⌈(B−D)/(ae·D)⌉ + 1)</code> · <code>t = 60·A·N / Vf</code> · <code>จำนวนชั้น = ⌈H / ap⌉</code> · <code>เวลารวม = t × จำนวนชั้น</code><br>
+  ไนลอน/พลาสติก: ค่าแนะนำมาจากตาราง Harvey Tool (ดอกพลาสติก 3 ฟัน ไม่เคลือบ) ไม่ใช่ตารางเหล็ก ระยะยื่นและเกณฑ์เตือนใช้ชุดเดียวกัน แต่ไม่มีค่าอ้างอิงดอกบอล/รัศมีมุมสำหรับไนลอน<br>
+  เกณฑ์เตือน: Vc นอกช่วงแนะนำ = เตือน, เกินขอบบน 15% = อันตราย · ความหนาเศษเกินค่าแนะนำ 20% = เตือน, 50% = อันตราย · บางกว่าค่าแนะนำ 40% = เตือน, 65% = อันตราย (เสี่ยงเสียดสีแทนการตัด) · ระยะยื่นเกิน 4D ลดค่าแนะนำ (≤5D: Vc 90% fz 80%, ≤6D: 80%/65%, ≤8D: 70%/50%, เกิน 8D: 60%/40%) ตัวคูณนี้เป็นหลักปฏิบัติทั่วไป ไม่ได้มาจากแคตตาล็อก (OSG ระบุเพียงให้ลด speed, feed และความลึกเมื่อยื่นเกิน 4D) · ap ลึกกว่าเงื่อนไขแคตตาล็อก = เตือน, เกิน 50% = อันตราย (ap ตื้นไม่ลดค่าแนะนำ) · ผลทั้งหมดเป็นค่าเริ่มต้น ต้องทดลองยืนยันก่อนใช้เป็นมาตรฐาน และดอกยี่ห้ออื่น เช่น NS ควรตรวจกับ catalog ของผู้ผลิตนั้น · ค่าเริ่มต้นของ Vc คูณด้วยตัวคูณความปลอดภัย (ค่าตั้งต้น 85%) ซึ่งเป็นหลักปฏิบัติของผู้จัดทำ ไม่ได้มาจากแคตตาล็อก และช่องสารเคลือบเป็นข้อมูลประกอบ ไม่ปรับตัวเลข</p>
+  </div>
+  <div id="viewRef" class="hidden">
+    <section class="panel">
+      <h2>ตารางอ้างอิงและที่มาของค่าแนะนำ</h2>
+      <p class="refp">ค่าแนะนำทั้งหมดในเครื่องคำนวณมาจาก<b>แคตตาล็อกเทคนิคของ OSG (End Mill Technical)</b> สำหรับดอกคาร์ไบด์เคลือบ DUROREY ที่ออกแบบมาสำหรับเหล็กชุบแข็ง ตารางด้านล่างแปลงหน่วยจากต้นฉบับ (in/min × 25.4 = mm/min, SFM × 0.3048 = m/min) แล้วคำนวณ Vc = π·D·n/1000 และ fz = F/(z·n) จากรอบและฟีดในตาราง รอบในตารางเป็นค่าของผู้ผลิต บางขนาดเกินเพดานรอบของเครื่องเรา (19,200 rpm) เครื่องคำนวณจะจำกัดให้เอง</p>
+      <div class="row" style="max-width:560px">
+        <div class="field"><label for="refBand">ช่วงความแข็งที่จะดูตาราง</label>
+          <select id="refBand"><option value="0">ไม่เกิน 45 HRC</option><option value="1">45–55 HRC</option><option value="2">55–62 HRC</option><option value="3">62–66 HRC</option><option value="4">Nylon / พลาสติก · เก็บผิว</option><option value="5">Nylon / พลาสติก · กึ่งหยาบ</option></select></div>
+        <div class="field" style="justify-content:flex-end"><button class="btn" id="printRef" type="button">พิมพ์ / บันทึกเป็น PDF</button></div>
+      </div>
+      <div id="refTables"></div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var BANDS=[
+    {name:'ไม่เกิน 45 HRC', vmin:109.7, vmax:129.5, vmid:120, pct:0.010, ap:1.5, ae:function(D){var r=D<=1.5?0.02:(D<=2.5?0.05:0.1);return Math.min(r*D,1.0);}, aemax:'1 mm'},
+    {name:'45–55 HRC', vmin:79.2, vmax:100.6, vmid:90, pct:0.010, ap:1.5, ae:function(D){return Math.min(0.05*D,1.0);}, aemax:'1 mm'},
+    {name:'55–62 HRC', vmin:59.4, vmax:79.2, vmid:70, pct:0.007, ap:1.5, ae:function(D){return Math.min(0.03*D,0.5);}, aemax:'0.5 mm'},
+    {name:'62–66 HRC', vmin:50.3, vmax:70.1, vmid:60, pct:0.006, ap:1.0, ae:function(D){return Math.min(0.02*D,0.5);}, aemax:'0.5 mm'}
+
+  ];
+  // Nylon / unfilled plastics: Harvey Tool HAT2 chart (End Mills for Plastics, 3 flute high-helix finishers, series 9021xx/9022xx)
+  // chip load (IPT) by cutter diameter (inch); lowest plausible row chosen because the PDF text layout interleaves rows
+  var NY={D:[0.015,0.031,0.047,0.062,0.078,0.093,0.125,0.187,0.250,0.312,0.375,0.500,0.625,0.750,1.000].map(function(x){return x*25.4}),
+    fin:[.00024,.00049,.00074,.00097,.00123,.00146,.00196,.00294,.00393,.00417,.00501,.00668,.00835,.01002,.01336].map(function(x){return x*25.4}),
+    semi:[.00043,.00089,.00135,.00178,.00224,.00267,.00359,.00536,.00717,.00761,.00914,.01219,.01524,.01829,.02438].map(function(x){return x*25.4})};
+  function nyFz(arr,D){ var X=NY.D, n=X.length; if(D<=X[0]) return arr[0]*D/X[0]; if(D>=X[n-1]) return arr[n-1]*D/X[n-1];
+    for(var i=0;i<n-1;i++){ if(D<=X[i+1]) return arr[i]+(arr[i+1]-arr[i])*(D-X[i])/(X[i+1]-X[i]); } return arr[n-1]; }
+  BANDS.push({name:'Nylon / พลาสติกไม่เติมสาร · เก็บผิว', plastic:true, vmin:243.8, vmax:365.8, vmid:304.8, pct:function(D){return nyFz(NY.fin,D)/D;}, ap:3, ae:function(D){return 0.10*D;}, aemax:'—'});
+  BANDS.push({name:'Nylon / พลาสติกไม่เติมสาร · กึ่งหยาบ', plastic:true, vmin:243.8, vmax:365.8, vmid:304.8, pct:function(D){return nyFz(NY.semi,D)/D;}, ap:1, ae:function(D){return 0.35*D;}, aemax:'—'});
+  // OSG AE-BM-H (List 8430/8530) 4 flutes: [rpm, feed in/min] per band, D = 2..12 mm
+  var BD=[2,3,4,5,6,8,10,12];
+  var BALL={
+    rough:{page:'1467', name:'AE-BM-H งานหยาบ', D:BD, z:4, T:[[[20850,131],[18450,73],[16000,63],[14550,57]],[[13900,110],[12300,68],[10650,58],[9700,53]],[[10450,99],[9200,65],[8000,57],[7300,52]],[[8350,105],[7350,75],[6400,65],[5800,59]],[[6950,110],[6150,77],[5350,68],[4850,61]],[[5200,98],[4600,72],[4000,63],[3650,57]],[[4450,91],[4000,69],[3500,61],[3200,55]],[[4050,89],[3650,69],[3250,62],[2900,55]]],
+      ap:function(b,D){return (b<2?(D<6?0.15:0.1):(D<6?0.12:0.07))*D;}, ae:function(b,D){return (b<2?0.2:0.15)*D;}},
+    finish:{page:'1468', name:'AE-BM-H งานเก็บผิว', D:BD, z:4, T:[[[25000,157],[24750,97],[22300,70],[18450,58]],[[18100,143],[16500,91],[14900,70],[12300,58]],[[13600,129],[12350,87],[11150,70],[9200,58]],[[10850,137],[9900,101],[8950,85],[7350,69]],[[9050,143],[8250,104],[7450,82],[6150,68]],[[6800,128],[6200,98],[5600,71],[4600,58]],[[5700,116],[5350,93],[4750,67],[4000,57]],[[5000,110],[4600,87],[4200,66],[3500,55]]],
+      ap:function(b,D){return 0.02*D;}, ae:function(b,D){return 0.05*D;}},
+    finish2:{page:'1461', name:'AE-BD-H งานเก็บผิว (2 ฟัน)', D:[0.2,0.8,1.0,1.4,1.5,2,2.5,3,4,5,6,8,10,12], z:2,
+      T:[[[25000,14.8],[25000,14.8],[25000,14.8],[25000,11.7]],[[25000,49.2],[25000,49.2],[25000,49.2],[25000,35.8]],[[25000,60.2],[25000,60.2],[25000,51.3],[25000,41.0]],[[25000,73.0],[25000,73.0],[25000,59.8],[25000,54.9]],[[25000,78.2],[25000,78.2],[25000,64.1],[25000,58.8]],[[25000,92.3],[25000,91.0],[25000,75.2],[23750,68.2]],[[25000,109.3],[25000,108.9],[22900,82.2],[19400,66.2]],[[25000,123.8],[25000,125.0],[19100,78.3],[16150,62.8]],[[24000,143.7],[19150,115.8],[14300,74.3],[11900,59.1]],[[19200,137.8],[14950,104.0],[11450,66.6],[9500,53.1]],[[16150,131.5],[12600,90.6],[9550,61.3],[7900,48.6]],[[11900,112.2],[9450,80.3],[7150,53.5],[5950,41.7]],[[9500,100.4],[7550,70.4],[5800,45.3],[4750,34.1]],[[8000,94.5],[6400,65.0],[4750,37.2],[3950,30.9]]],
+      ap:function(b,D){return (b<2?0.05:0.03)*D;}, ae:function(b,D){return 0.1*D;}}
+  };
+  // OSG AE-MS-H / AE-CR-MS-H Side Milling p.1348 (reference table) [rpm, feed in/min] per band
+  var SQ={D:[1,1.5,2,2.5,3,4,5,6,8,10,12,16,20], T:[[[38220,60.2],[28660,45.3],[22290,24.4],[19110,18.1]],[[25480,60.2],[19110,45.3],[14860,24.4],[12740,18.1]],[[19110,60.2],[14330,45.3],[11150,24.4],[9550,18.1]],[[15290,60.2],[11460,45.3],[8920,24.4],[7640,18.1]],[[12740,60.2],[9550,45.3],[7430,24.4],[6370,18.1]],[[9550,60.2],[7170,45.3],[5570,24.4],[4730,18.1]],[[7640,60.2],[5730,45.3],[4460,24.4],[3820,18.1]],[[6370,90.2],[4780,67.7],[3720,37.0],[3180,27.2]],[[4780,90.2],[3580,67.7],[2790,37.0],[2390,27.2]],[[3820,90.2],[2870,67.7],[2230,37.0],[1910,27.2]],[[3180,90.2],[2390,67.7],[1860,37.0],[1590,27.2]],[[2390,90.2],[1790,67.7],[1390,37.0],[1190,27.2]],[[1910,90.2],[1430,67.7],[1110,37.0],[960,27.2]]]};
+  var mode=1, edited={Vc:false,fz:false};
+  function num(id){var s=$(id).value; if(s===''||s==null) return NaN; var v=parseFloat(s); return isFinite(v)?v:NaN}
+  function kfac(r){ r=Math.min(r,1); return r>=0.5?1:2*Math.sqrt(r-r*r); }
+  var ae={pct:60, mm:NaN, unit:'pct', last:'pct'};
+  function aeShow(){
+    var D=num('D'); if(D>0){ if(ae.last==='mm') ae.pct=ae.mm/D*100; else ae.mm=ae.pct*D/100; }
+    $('ae').value=isFinite(ae.pct)?ae.pct:'';
+    var v=(ae.unit==='pct')?ae.pct:ae.mm;
+    if(document.activeElement!==$('aeIn')) $('aeIn').value=isFinite(v)?parseFloat(v.toFixed(ae.unit==='pct'?2:3)):'';
+    $('aeUnit').textContent=(ae.unit==='pct')?'% ของ D':'mm';
+    $('hAe').textContent=(D>0&&isFinite(ae.pct)&&isFinite(ae.mm))?((ae.unit==='pct')?('= '+parseFloat(ae.mm.toFixed(3))+' mm'):('= '+parseFloat(ae.pct.toFixed(2))+'% ของ D'))+' · กดปุ่มเพื่อสลับหน่วย':'';
+  }
+  function aeFromInput(){
+    var v=num('aeIn'), D=num('D'); ae.last=ae.unit;
+    if(ae.unit==='pct'){ ae.pct=v; ae.mm=(D>0)?v*D/100:NaN; } else { ae.mm=v; ae.pct=(D>0)?v/D*100:NaN; }
+    aeShow();
+  }
+  function setAePct(v){ ae.pct=v; ae.last='pct'; aeShow(); }
+  function fmt(v,dp){return v.toLocaleString('en-US',{minimumFractionDigits:dp,maximumFractionDigits:dp})}
+  function trim(v,dp){return parseFloat(v.toFixed(dp)).toString()}
+  function row(dl,k,v){var dt=document.createElement('dt');dt.textContent=k;var dd=document.createElement('dd');dd.textContent=v;dl.appendChild(dt);dl.appendChild(dd)}
+  function note(text,cls){var d=document.createElement('div');d.className='note'+(cls?' '+cls:'');d.textContent=text;$('notes').appendChild(d)}
+  function ballDeff(D,ap){ if(!(ap>0)) return D; if(ap>=D/2) return D; return 2*Math.sqrt(ap*(D-ap)); }
+  function crGeom(D,r,ap){ if(!(r>0)||!(ap>0)||ap>=r) return {Deff:D,s:1}; var w=Math.sqrt(2*r*ap-ap*ap); return {Deff:D-2*r+2*w, s:w/r}; }
+  // rule-of-thumb overhang factors (not from catalog)
+  function ohFac(LD){ if(!(LD>4)) return {v:1,f:1,lvl:0}; if(LD<=5) return {v:0.9,f:0.8,lvl:1}; if(LD<=6) return {v:0.8,f:0.65,lvl:1}; if(LD<=8) return {v:0.7,f:0.5,lvl:2}; return {v:0.6,f:0.4,lvl:2}; }
+  function ballCat(b,D,op){
+    var TB=BALL[op], T=TB.T, DD=TB.D, zz=TB.z, out=(D<DD[0]||D>DD[DD.length-1]);
+    function at(i){var rp=T[i][b][0], fd=T[i][b][1]; return {vn:Math.PI*DD[i]*rp/1000, fd:fd*25.4/(zz*rp)/DD[i]};}
+    var v,f;
+    if(D<=DD[0]){var a=at(0);v=a.vn;f=a.fd;}
+    else if(D>=DD[DD.length-1]){var a=at(DD.length-1);v=a.vn;f=a.fd;}
+    else{ for(var i=0;i<DD.length-1;i++){ if(D>=DD[i]&&D<=DD[i+1]){var a=at(i),c=at(i+1),t=(D-DD[i])/(DD[i+1]-DD[i]); v=a.vn+(c.vn-a.vn)*t; f=a.fd+(c.fd-a.fd)*t; break;} } }
+    return {Vnom:v, fz:f*D, ap:BALL[op].ap(b,D), ae:BALL[op].ae(b,D), out:out};
+  }
+
+  function rec(){
+    var bi=+$('band').value, b=BANDS[bi], D=num('D'), aeu=num('ae'), apu=num('ap'), tool=(+$('band').value>=4)?'sq':$('tool').value;
+    if(!(D>0)) return null;
+    var L=num('L'), LD=(L>0)?L/D:NaN, oh=ohFac(LD);
+    var sf=parseFloat($('sf').value)||1, vf=Math.min(oh.v,sf);
+    var aeU=(aeu>0?aeu/100*D:0.6*D);
+    var R={b:b, bi:bi, D:D, tool:tool, oh:oh, LD:LD, capped:false};
+    if(tool==='ball'){
+      var op=$('op').value, c=ballCat(bi,D,op);
+      var DeffC=ballDeff(D,c.ap), DeffU=ballDeff(D,apu);
+      var VeffC=c.Vnom*DeffC/D;
+      var hC=c.fz*(DeffC/D)*kfac(c.ae/DeffC);
+      var sU=DeffU/D, kU=kfac(aeU/DeffU);
+      var fz=hC/(sU*kU), cap2=false;
+      if(fz>2*c.fz){fz=2*c.fz;cap2=true;}
+      R.Vc=VeffC*vf; R.fzSet=fz*oh.f; R.hRec=hC*oh.f; R.Dref=DeffU; R.s=sU; R.Dk=DeffU; R.cap2=cap2;
+      R.vmin=VeffC*0.7*vf; R.vmax=VeffC*1.3*oh.v; R.out=c.out;
+      R.info='<b>เงื่อนไข OSG '+BALL[op].name+' (หน้า '+BALL[op].page+')</b> ('+b.name+'): fz '+trim(c.fz,4)+' mm/tooth ที่ ap '+trim(c.ap,3)+' mm และ ae '+trim(c.ae,3)+' mm · Deff ที่ ap ตาราง = '+trim(DeffC,2)+' mm (Vc ที่จุดสัมผัส '+trim(VeffC,1)+' m/min) · Deff ที่ ap ของคุณ = '+trim(DeffU,2)+' mm';
+      R.range=BALL[op].D[0]+'–'+BALL[op].D[BALL[op].D.length-1];
+      R.info+=' · ช่วง Vc แนะนำ ±30% ของค่าเริ่มต้นเป็นค่าที่ผู้จัดทำกำหนด ไม่ได้มาจากแคตตาล็อก';
+    } else {
+      var aeC=b.ae(D), fzC=(typeof b.pct==='function'?b.pct(D):b.pct)*D, hC=fzC*kfac(aeC/D);
+      var g=(tool==='cr')?crGeom(D,num('r'),apu):{Deff:D,s:1};
+      var kU=kfac(aeU/D), fz=hC/(g.s*kU), cap2=false;
+      if(fz>2*fzC*kfac(aeC/D)/kU && g.s<1){fz=2*fzC*kfac(aeC/D)/kU;cap2=true;}
+      R.Vc=b.vmid*vf; R.fzSet=fz*oh.f; R.hRec=hC*oh.f; R.Dref=g.Deff; R.s=g.s; R.Dk=D; R.cap2=cap2;
+      R.vmin=b.vmin*vf; R.vmax=b.vmax*oh.v; R.out=(bi>=4)?(D<0.4||D>25.4):(D<1||D>20);
+      R.info='<b>เงื่อนไขตาราง OSG AE-MS-H'+(tool==='cr'?' / AE-CR-MS-H':'')+'</b> ('+b.name+'): fz '+trim(fzC,4)+' mm/tooth ('+(b.pct*100).toFixed(1)+'% ของ D) ที่ ap '+b.ap+'D ('+trim(b.ap*D,2)+' mm) และ ae '+trim(aeC,3)+' mm ('+trim(aeC/D*100,2)+'% ของ D, สูงสุด '+b.aemax+') · ความหนาเศษอ้างอิง '+trim(hC,4)+' mm';
+      if(tool==='cr') R.info+=' · Deff ที่ ap ของคุณ = '+trim(g.Deff,2)+' mm'+(g.s<1?' (ap < r เศษบางลงตามมุมรัศมี)':'');
+      if(bi>=4) R.info='<b>เงื่อนไข Harvey Tool (ดอกพลาสติก 3 ฟัน ไม่เคลือบ)</b> ('+b.name+'): fz '+trim(fzC,4)+' mm/tooth ('+trim(fzC/D*100,2)+'% ของ D) ที่ ap '+b.ap+'D ('+trim(b.ap*D,2)+' mm) และ ae '+trim(aeC,3)+' mm ('+trim(aeC/D*100,1)+'% ของ D) · ความเร็วตัด 800–1200 SFM (ประมาณ 244–366 m/min) · ความหนาเศษอ้างอิง '+trim(hC,4)+' mm';
+    }
+    if(oh.lvl>0) R.info+=' · ระยะยื่น '+trim(LD,1)+'D ลดค่าแนะนำ fz เหลือ '+Math.round(oh.f*100)+'%';
+    if(sf<1||oh.lvl>0) R.info+=' · Vc แนะนำใช้ '+Math.round(vf*100)+'% ของค่าตาราง (ใช้ค่าที่ต่ำกว่าระหว่างตัวคูณความปลอดภัย '+Math.round(sf*100)+'% กับตัวคูณระยะยื่น '+Math.round(oh.v*100)+'% ไม่คูณซ้อน)';
+    return R;
+  }
+  function fill(force){
+    var r=rec(); if(!r) return;
+    if(force||!edited.Vc){$('Vc').value=trim(r.Vc,1); edited.Vc=false; $('Vc').classList.remove('edited');}
+    if(force||!edited.fz){$('fz').value=trim(r.fzSet,4); edited.fz=false; $('fz').classList.remove('edited');}
+  }
+  function hints(){
+    var tool=$('tool').value;
+    var pl=(+$('band').value>=4); $('fR').classList.toggle('hidden',tool!=='cr'||pl); $('fOp').classList.toggle('hidden',tool!=='ball'||pl);
+    var o=$('mat').options[$('mat').selectedIndex]; $('hMat').textContent=o.getAttribute('data-h')?('ความแข็ง'+o.getAttribute('data-h')+' (ตรวจจากใบรับรองวัสดุหรือวัดจริง)'):'';
+    var D=num('D'), L=num('L'); $('hL').textContent=(D>0&&L>0)?('= '+trim(L/D,1)+'D'):'';
+    $('hZ').textContent=(tool==='ball')?('ค่าแนะนำมาจากดอกบอล '+BALL[$('op').value].z+' ฟัน ถ้าจำนวนฟันต่างจากนี้ fz ต่อฟันใช้ค่าเดิม แต่ F เปลี่ยนตามจำนวนฟัน'):'';
+    $('lblVc').textContent=(tool==='sq')?'ความเร็วตัด Vc (m/min)':'ความเร็วตัดที่จุดสัมผัสจริง Vc (m/min)';
+    var r=rec();
+    if(!r){$('hVc').textContent='';$('hfz').textContent='';$('catInfo').innerHTML='กรอก D เพื่อดูค่าแนะนำ';return}
+    $('hVc').textContent='แนะนำ '+trim(r.Vc,1)+' (ช่วง '+trim(r.vmin,1)+'–'+trim(r.vmax,1)+')';
+    $('hfz').textContent='แนะนำ '+trim(r.fzSet,4)+' ที่ ae '+trim(num('ae')||0,1)+'% ('+trim((num('ae')||0)*D/100,3)+' mm)'+(r.cap2?' (จำกัดไม่เกิน 2 เท่าของตาราง)':'');
+    $('catInfo').innerHTML=r.info;
+  }
+  function setMode(m){
+    mode=m;
+    $('m1').setAttribute('aria-pressed',m===1);$('m2').setAttribute('aria-pressed',m===2);
+    Array.prototype.forEach.call(document.querySelectorAll('.m1'),function(e){e.classList.toggle('hidden',m!==1)});
+    Array.prototype.forEach.call(document.querySelectorAll('.m2'),function(e){e.classList.toggle('hidden',m!==2)});
+    calc();
+  }
+  function blank(){$('v1').textContent='—';$('v2').textContent='—';$('gcode').textContent='—';$('detail').innerHTML='';$('timeOut').classList.add('hidden');}
+
+  function calc(){
+    hints();
+    $('notes').innerHTML=''; var dl=$('detail'); dl.innerHTML='';
+    $('timeOut').classList.add('hidden'); $('timeDl').innerHTML='';
+    var D=num('D'), z=num('z'), aeu=num('ae'), tool=(+$('band').value>=4)?'sq':$('tool').value;
+    if(!(D>0 && z>=1 && Math.floor(z)===z)){blank(); note('กรอก D มากกว่า 0 และ z เป็นจำนวนเต็มตั้งแต่ 1 ขึ้นไป','plain'); return}
+    if(!(aeu>0 && aeu<=100)){blank(); note('ae ต้องมากกว่า 0 และไม่เกินเส้นผ่านศูนย์กลางดอก (100% ของ D)','plain'); return}
+    if(tool==='cr' && !(num('r')>0 && num('r')<=D/2)){blank(); note('กรอกรัศมีมุม r มากกว่า 0 และไม่เกินครึ่งหนึ่งของ D','plain'); return}
+    if(tool!=='sq' && !(num('ap')>0)){blank(); note('ดอกบอลและดอกรัศมีมุมต้องกรอก ap เพื่อคำนวณ Deff','plain'); return}
+    var r=rec(), aeMM=aeu/100*D;
+    var kUse=kfac(aeMM/r.Dk), Dref=r.Dref;
+    var maxrpm=num('maxrpm'), capPct=num('cap'), maxf=num('maxf');
+    var capRpm=(maxrpm>0&&capPct>0)?maxrpm*Math.min(capPct,100)/100:Infinity;
+    var n, Vf, Vcact, fzact, ideal, capped=false;
+    if(mode===1){
+      var Vc=num('Vc'), fz=num('fz');
+      if(!(Vc>0)||!(fz>0)){blank(); note('กรอก Vc และ fz ให้มากกว่า 0','plain'); return}
+      ideal=1000*Vc/(Math.PI*Dref); n=Math.min(ideal,capRpm); capped=ideal>capRpm;
+      Vcact=Math.PI*Dref*n/1000; fzact=fz; Vf=fz*z*n;
+      $('k1').textContent='S';$('k2').textContent='F';
+      $('v1').textContent=fmt(Math.round(n),0);$('u1').textContent='rpm';
+      $('v2').textContent=fmt(Vf,1);$('u2').textContent='mm/min';
+      $('gcode').textContent='S'+Math.round(n)+' M03  F'+trim(Vf,1);
+      if(tool!=='sq') row(dl,'เส้นผ่านศูนย์กลางใช้งาน Deff',trim(Dref,3)+' mm');
+      row(dl,'รอบตามสูตร (ก่อนจำกัด)',fmt(ideal,0)+' rpm');
+      row(dl,(tool==='sq'?'Vc ที่ได้จริง':'Vc จริงที่จุดสัมผัส'),fmt(Vcact,1)+' m/min');
+      if(tool!=='sq') row(dl,'Vc ที่ขอบนอกสุดของดอก',fmt(Math.PI*D*n/1000,1)+' m/min');
+      row(dl,'fz ที่ตั้ง',trim(fz,4)+' mm/tooth');
+      if(capped) note('รอบตามสูตร '+fmt(ideal,0)+' rpm เกินเพดาน '+fmt(capRpm,0)+' rpm จึงลดรอบลงที่เพดาน Vc จริงเหลือ '+fmt(Vcact,1)+' m/min','');
+    } else {
+      var S=num('S'), F=num('F');
+      if(!(S>0)||!(F>0)){blank(); note('กรอก S และ F ให้มากกว่า 0','plain'); return}
+      n=S; Vf=F; Vcact=Math.PI*Dref*S/1000; fzact=F/(z*S);
+      $('k1').textContent='Vc';$('k2').textContent='fz';
+      $('v1').textContent=fmt(Vcact,1);$('u1').textContent='m/min';
+      $('v2').textContent=trim(fzact,4);$('u2').textContent='mm/tooth';
+      $('gcode').textContent='S'+trim(S,0)+' M03  F'+trim(F,1);
+      if(tool!=='sq') row(dl,'Deff (Vc คิดที่จุดสัมผัส)',trim(Dref,3)+' mm');
+      if(isFinite(capRpm)) row(dl,'รอบเทียบกับเพดาน',fmt(S/capRpm*100,0)+' %');
+      if(S>capRpm) note('รอบ S ที่กรอกเกินเพดาน '+fmt(capRpm,0)+' rpm ที่โรงงานกำหนด','bad');
+    }
+    var h=fzact*r.s*kUse;
+    row(dl,'ความหนาเศษจริงโดยประมาณ',trim(h,4)+' mm');
+    row(dl,'อัตราป้อนต่อรอบ (fz·z)',trim(fzact*z,4)+' mm/rev');
+    if(tool==='ball'){ var R0=D/2, hs=R0-Math.sqrt(Math.max(R0*R0-(aeMM/2)*(aeMM/2),0)); row(dl,'ความสูงรอยคลื่นผิว (scallop)',trim(hs*1000,2)+' µm ที่ระยะก้าว '+trim(aeMM,3)+' mm'); }
+
+    // ---- warnings ----
+    if(r.out) note('ดอก '+trim(D,2)+' mm อยู่นอกช่วงตาราง '+(r.bi>=4?'Harvey Tool (0.4–25.4':'OSG ('+(tool==='ball'?r.range:'1–20'))+' mm) ค่าแนะนำคำนวณต่อจากขนาดที่ใกล้ที่สุด ควรทดลองอย่างระวัง','');
+    if(r.bi>=4 && $('tool').value!=='sq') note('ยังไม่มีค่าอ้างอิงดอกบอลหรือดอกรัศมีมุมสำหรับไนลอน ระบบคำนวณเหมือนดอกปลายเรียบ','plain');
+    if(r.bi>=4 && z>=4) note('ดอก '+z+' ฟัน ร่องคายเศษแคบ เศษไนลอนยาวเหนียวอุดและละลายติดดอกง่าย ค่าแนะนำอิงดอกพลาสติก 3 ฟันไม่เคลือบของ Harvey Tool ถ้าเป็นไปได้ใช้ดอก 2–3 ฟัน ถ้าต้องใช้ 4 ฟัน ให้เริ่มที่ fz ต่ำ ใช้ดอกคม เป่าลมไล่เศษตลอด และอย่าให้ดอกถูไถโดยไม่กินเนื้อ','');
+    var warnedVc=false;
+    if(Vcact>r.vmax*1.15){note('Vc '+fmt(Vcact,1)+' m/min สูงกว่าช่วงแนะนำ ('+trim(r.vmin,1)+'–'+trim(r.vmax,1)+') เกิน 15% เสี่ยงคมตัดร้อนและสึกเร็วมาก','bad');warnedVc=true}
+    else if(Vcact>r.vmax+0.05){note('Vc '+fmt(Vcact,1)+' m/min สูงกว่าช่วงแนะนำ ('+trim(r.vmin,1)+'–'+trim(r.vmax,1)+') อาจทำให้ดอกสึกเร็วขึ้น','');warnedVc=true}
+    else if(Vcact<r.vmin-0.05 && !capped){note('Vc '+fmt(Vcact,1)+' m/min ต่ำกว่าช่วงแนะนำ ('+trim(r.vmin,1)+'–'+trim(r.vmax,1)+') งานจะช้ากว่าที่ควร','');warnedVc=true}
+    else if(Vcact<r.vmin-0.05 && capped){note('Vc ต่ำกว่าช่วงแนะนำเพราะติดเพดานรอบของเครื่อง'+(tool==='sq'?' ซึ่งหลีกเลี่ยงไม่ได้สำหรับดอกเล็ก':' เมื่อกัดตื้นด้วยดอกบอลหรือรัศมีมุม Deff เล็ก จึงต้องใช้รอบสูง'),'plain');warnedVc=true}
+    var ratio=h/r.hRec, pct=Math.round((ratio-1)*100);
+    if(ratio>1.5) note('เศษหนากว่าค่าแนะนำ '+pct+'% เสี่ยงคมบิ่นหรือดอกหัก ควรลด fz หรือลด ae','bad');
+    else if(ratio>1.2) note('เศษหนากว่าค่าแนะนำ '+pct+'% ควรทดลองอย่างระวังและดูสภาพคมตัด','');
+    else if(ratio<0.35) note('เศษบางกว่าค่าแนะนำ '+Math.abs(pct)+'% เสี่ยงเสียดสีแทนการตัด ร้อน สึกเร็ว และผิวไม่สวย','bad');
+    else if(ratio<0.6) note('เศษบางกว่าค่าแนะนำ '+Math.abs(pct)+'% งานช้ากว่าที่ควร และอาจเริ่มเสียดสีแทนการตัด','');
+    else if(!warnedVc) note('Vc และความหนาเศษอยู่ในช่วงแนะนำ ('+(pct>=0?'+':'')+pct+'% จากค่าแนะนำ)','ok');
+    if(r.cap2) note('ap ตื้นมากจนสูตรให้ fz สูงเกิน 2 เท่าของตาราง จึงจำกัดค่าแนะนำไว้ที่ 2 เท่า ควรเพิ่มทีละขั้นพร้อมดูผล','plain');
+    var apu=num('ap');
+    if(apu>0){
+      var apCat=(tool==='ball')?BALL[$('op').value].ap(r.bi,D):r.b.ap*D;
+      if(apu>apCat*1.5) note('ap '+trim(apu,3)+' mm ลึกกว่าเงื่อนไขแคตตาล็อก ('+trim(apCat,2)+' mm) เกิน 50% เสี่ยงดอกโก่งหรือหัก ควรลด ap หรือลด fz','bad');
+      else if(apu>apCat+1e-9) note('ap '+trim(apu,3)+' mm ลึกกว่าเงื่อนไขแคตตาล็อก ('+trim(apCat,2)+' mm) ควรลด fz และดูการโก่งของดอก','');
+    }
+    if(r.oh.lvl===2) note('ระยะยื่น '+trim(r.LD,1)+'D ยาวมาก ดอกจะโก่งและสั่นง่าย ค่าแนะนำถูกลดลงแล้ว ควรใช้ดอกคอยาวหรือลดระยะยื่นถ้าทำได้','bad');
+    else if(r.oh.lvl===1) note('ระยะยื่น '+trim(r.LD,1)+'D เกิน 4D ค่าแนะนำถูกลดลงแล้ว ควรดูการสั่นและผิวงาน','');
+    var coat=$('coat').value;
+    if(r.bi<4 && coat==='dlc') note('สารเคลือบ DLC ไม่เหมาะกับการกัดเหล็ก (ทำปฏิกิริยากับเหล็กที่ความร้อนสูง) ตรวจชนิดสารเคลือบอีกครั้ง','bad');
+    else if(r.bi>=2 && r.bi<4 && (coat==='tialn'||coat==='ticn')) note('สารเคลือบ '+(coat==='tialn'?'TiAlN':'TiCN')+' มักไม่ใช่ตัวเลือกแรกสำหรับเหล็กชุบแข็ง ≥55 HRC (ทนความร้อนไม่พอเมื่อเทียบ AlTiN Al สูง หรือ AlCrN) ค่าแนะนำอิงดอกเคลือบของ OSG ควรเริ่มทดลองที่ Vc ต่ำและดูการสึกของคม','');
+    var Vc0=num('Vc0');
+    if(mode===1 && Vc0>0 && Vcact>Vc0*1.5) note('Vc '+fmt(Vcact,1)+' m/min สูงกว่าค่าเดิม ('+fmt(Vc0,1)+') เกิน 1.5 เท่า อายุดอกอาจสั้นลงมาก ควรเริ่มทดลองที่ค่าต่ำก่อนและตรวจการสึกของคมเป็นระยะ','');
+    if(r.bi>=4){
+      note('ไนลอนนำความร้อนไม่ดี ผู้ผลิตแนะนำลมเป่าหรือน้ำหล่อเย็นกึ่งสังเคราะห์ ยังไม่พบข้อมูลของน้ำมันตัดชนิดน้ำมันล้วนกับไนลอน ควรเป่าลมและสอบถามผู้ขายวัสดุก่อน','plain');
+      note('ยึดชิ้นงานให้รองรับเต็มและไม่หนีบแรงจนบิด ถ้ากัดเนื้อออกมากด้านเดียวหรือต้องการความเรียบสูง ผู้ผลิตไนลอนหล่อแนะนำอบคลายเครียดระหว่างขั้นตอน และถ้ากัดด้วยดอกทื่อหรือไม่มีการระบายความร้อน ควรอบหลังกัด','plain');
+    }
+    if(maxf>0 && Vf>maxf) note('F = '+fmt(Vf,1)+' mm/min เกินอัตราป้อนสูงสุด ('+fmt(maxf,0)+') ที่รอบนี้ fz สูงสุดที่ตั้งได้ประมาณ '+trim(maxf/(z*n),4)+' mm/tooth','bad');
+    if(!isFinite(capRpm)) note('ยังไม่ได้กำหนดเพดานรอบ ตรวจรอบสูงสุดของเครื่องก่อนตั้งค่า','plain');
+
+    var A=num('A'), B=num('B');
+    if(A>0&&B>0){
+      var step=aeMM, N=Math.max(1,Math.ceil((B-D)/step)+1), L=A*N, t=60*L/Vf;
+      var H=num('H'), apL=num('ap'), hasH=(H>0&&apL>0), layers=hasH?Math.max(1,Math.ceil(H/apL-1e-9)):1, tt=t*layers, ts=Math.round(tt);
+      $('timeOut').classList.remove('hidden'); var td=$('timeDl');
+      row(td,'จำนวนแนวเดินมีดต่อชั้น N',String(N));
+      row(td,'ระยะเดินต่อชั้น L',fmt(L,0)+' mm');
+      row(td,'เวลาเดินมีดต่อชั้น t',fmt(t,1)+' s');
+      row(td,'จำนวนชั้น',String(layers)+(hasH?' (H '+trim(H,3)+' ÷ ap '+trim(apL,3)+')':' (ไม่ได้กรอก H)'));
+      row(td,'เวลาเดินมีดรวม',fmt(tt,1)+' s  ('+Math.floor(ts/60)+' นาที '+(ts%60)+' วินาที)');
+      var F0=num('F0');
+      if(F0>0){var t0=60*L/F0*layers, red=(t0-tt)/t0*100; row(td,'เวลารวมที่ F เดิม',fmt(t0,1)+' s'); row(td,red>=0?'เวลาที่ลดลง':'เวลาที่เพิ่มขึ้น',fmt(Math.abs(red),1)+' %');}
+    }
+  }
+
+  $('D').addEventListener('input',function(){aeShow();$('preset').value='';fill(true);calc()});
+  $('aeIn').addEventListener('input',function(){aeFromInput();$('preset').value='';fill(false);calc()});
+  $('aeIn').addEventListener('blur',aeShow);
+  $('aeUnit').addEventListener('click',function(){ae.unit=(ae.unit==='pct')?'mm':'pct'; aeShow(); calc();});
+  ['ap','L'].forEach(function(id){$(id).addEventListener('input',function(){$('preset').value='';fill(false);calc()})});
+  $('r').addEventListener('input',function(){fill(true);calc()});
+  $('band').addEventListener('change',function(){
+    var o=$('mat').options[$('mat').selectedIndex];
+    if(o.value!=='custom' && !(+o.value>=4 && +$('band').value>=4) && o.value!==$('band').value) $('mat').value='custom';
+    $('preset').value='';fill(true);calc()});
+  $('mat').addEventListener('change',function(){ if(this.value!=='custom') $('band').value=this.value; $('preset').value='';fill(true);calc()});
+  var zOther='4', zBall='2', lastTool='sq';
+  $('tool').addEventListener('change',function(){
+    var t=this.value;
+    if(lastTool==='ball') zBall=$('z').value||'2'; else zOther=$('z').value||'4';
+    if(t==='ball') $('z').value=zBall; else if(lastTool==='ball') $('z').value=zOther;
+    lastTool=t; $('preset').value=''; fill(true); calc();
+  });
+  $('sf').addEventListener('change',function(){$('preset').value='';fill(true);calc()});
+  ['coat','Vc0'].forEach(function(id){$(id).addEventListener('input',calc);$(id).addEventListener('change',calc)});
+  $('op').addEventListener('change',function(){$('preset').value='';fill(true);calc()});
+  ['Vc','fz'].forEach(function(id){$(id).addEventListener('input',function(){edited[id]=true;$(id).classList.add('edited');$('preset').value='';calc()})});
+  ['z','S','F','maxrpm','cap','maxf','A','B','F0','H'].forEach(function(id){$(id).addEventListener('input',calc)});
+  $('reset').addEventListener('click',function(){$('preset').value='';fill(true);calc()});
+  $('m1').addEventListener('click',function(){setMode(1)});
+  $('m2').addEventListener('click',function(){setMode(2)});
+  $('preset').addEventListener('change',function(){
+    var v=this.value; if(!v) return; var p=v.split(',');
+    if(lastTool==='ball'){zBall=$('z').value||'2';} $('tool').value='sq'; lastTool='sq'; $('L').value=''; $('mat').value='custom';
+    $('band').value=p[4]; $('D').value=p[0]; $('z').value=p[1]; setAePct(60);
+    var r=rec(), kC=kfac(r.b.ae(+p[0])/(+p[0]));
+    $('Vc').value=p[2]; $('fz').value=trim(parseFloat(p[3])*kC/kfac(0.6),8);
+    edited.Vc=true; edited.fz=true; $('Vc').classList.add('edited'); $('fz').classList.add('edited');
+    setMode(1);
+  });
+  $('copy').addEventListener('click',function(){
+    var btn=this, txt=$('gcode').textContent; if(txt==='—') return;
+    try{navigator.clipboard.writeText(txt).then(function(){btn.textContent='คัดลอกแล้ว';setTimeout(function(){btn.textContent='คัดลอก'},1400)},function(){btn.textContent='คัดลอกไม่ได้';setTimeout(function(){btn.textContent='คัดลอก'},1600)})}
+    catch(e){btn.textContent='คัดลอกไม่ได้';setTimeout(function(){btn.textContent='คัดลอก'},1600)}
+  });
+  $('theme').addEventListener('click',function(){
+    var r=document.documentElement, cur=r.getAttribute('data-theme');
+    var dark=cur?cur==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;
+    r.setAttribute('data-theme',dark?'light':'dark');
+  });
+  function tbl(head,rows){var h='<div class="tblwrap"><table class="ref"><thead><tr>'+head.map(function(x){return '<th>'+x+'</th>'}).join('')+'</tr></thead><tbody>';
+    rows.forEach(function(r){h+='<tr>'+r.map(function(x){return '<td>'+x+'</td>'}).join('')+'</tr>'}); return h+'</tbody></table></div>';}
+  var SRC={sq:'https://osgtool.com/content/literature/8002024CA/Tech%20pg.%20List%20(s)-%208440_%208470_%208540_%208570.pdf',
+    bm:'https://osgtool.com/content/literature/8002024CA/Tech%20pg.%20List%20(s)-%208430_%208530.pdf',
+    bd:'https://osgtool.com/content/literature/8002024CA/Tech%20pg.%20List%20(s)-%208410_%208510.pdf',
+    l8540:'https://osgtool.com/content/literature/8002024CA/List%208540%20-%20A%20BRAND%20AE-MS-H.pdf',
+    harvey:'https://ecomm.productivity.com/customer/docs/skudocs/HAT2_Speeds_Feeds_902131.pdf',
+    nycast:'https://polymershapes.com/wp-content/uploads/2025/08/CastNylons-Machining-Guidelines_English.pdf',
+    boedeker:'https://www.boedeker.com/Technical-Resources/Plastic-Machining-Guidelines/Plastic-Milling-Machining-Guidelines'};
+  function renderRef(){
+    var bi=+$('refBand').value, b=BANDS[bi], h='';
+    var apTxt=['1.5D','1.5D','1.5D','1D'][bi], aeTxt=['0.02D (D ≤ 1.5), 0.05D (1.5 < D ≤ 2.5), 0.1D (D > 2.5) สูงสุด 1 mm','0.05D สูงสุด 1 mm','0.03D สูงสุด 0.5 mm','0.02D สูงสุด 0.5 mm'][bi];
+    if(bi<4){
+    h+='<h3 class="ref">ตาราง A · ดอกปลายเรียบและรัศมีมุม: OSG A Brand AE-MS-H / AE-CR-MS-H, Side Milling (หน้า 1348)</h3>';
+    h+='<p class="refp">'+b.name+' · Vc ตามแคตตาล็อก '+trim(b.vmin,1)+'–'+trim(b.vmax,1)+' m/min (เครื่องคำนวณใช้ค่ากลาง '+b.vmid+') · ap = '+apTxt+' · ae = '+aeTxt+' · จำนวนฟันตาม List 8540: 4 ฟันที่ 1–5 mm และ 6 ฟันที่ 6 mm ขึ้นไป</p>';
+    var rows=SQ.D.map(function(D,i){var rp=SQ.T[i][bi][0], F=SQ.T[i][bi][1]*25.4, z=D<6?4:6, fz=F/(z*rp); return [trim(D,1),z,fmt(rp,0),fmt(F,0),fmt(Math.PI*D*rp/1000,1),trim(fz,4),(fz/D*100).toFixed(2)+'%'];});
+    h+=tbl(['D (mm)','z','n (rpm)','F (mm/min)','Vc (m/min)','fz (mm/tooth)','fz / D'],rows);
+    [['finish2','B'],['finish','C'],['rough','D']].forEach(function(k){
+      var TB=BALL[k[0]], ex=TB.D[Math.min(4,TB.D.length-1)];
+      var src=(k[0]==='finish2')?'หน้า 1461':(k[0]==='finish'?'หน้า 1468':'หน้า 1467');
+      h+='<h3 class="ref">ตาราง '+k[1]+' · ดอกบอล '+TB.name+' (OSG A Brand, '+src+')</h3>';
+      h+='<p class="refp">'+b.name+' · ap ตามตาราง = '+trim(TB.ap(bi,10)/10,3)+'D · ae = '+trim(TB.ae(bi,10)/10,3)+'D'+(k[0]==='rough'?' (D < 6 mm ใช้ ap '+trim(TB.ap(bi,5)/5,3)+'D)':'')+' · ดอก '+TB.z+' ฟัน · Vc ในตารางคิดที่เส้นผ่านศูนย์กลางเต็ม D เครื่องคำนวณแปลงเป็น Vc ที่จุดสัมผัส (Deff) อีกชั้น'+(k[0]==='finish2'?' · ค่า ap/ae ของตารางนี้อ่านจากหัวตารางต้นฉบับ':'')+' · ช่วง Vc แนะนำ ±30% ในเครื่องคำนวณเป็นค่าที่ผู้จัดทำกำหนด ไม่ได้มาจากตารางนี้</p>';
+      var rr=TB.D.map(function(D,i){var rp=TB.T[i][bi][0], F=TB.T[i][bi][1]*25.4, fz=F/(TB.z*rp); return [trim(D,1),fmt(rp,0),fmt(F,0),fmt(Math.PI*D*rp/1000,1),trim(fz,4),(fz/D*100).toFixed(2)+'%'];});
+      h+=tbl(['D (mm)','n (rpm)','F (mm/min)','Vc ที่ D เต็ม (m/min)','fz (mm/tooth)','fz / D'],rr);
+    });
+    } else {
+      h+='<h3 class="ref">ตาราง G · Nylon / พลาสติกไม่เติมสาร: Harvey Tool, End Mills for Plastics (ดอก 3 ฟัน Square Upcut High Helix Finishers)</h3>';
+      h+='<p class="refp">กลุ่มวัสดุในตารางของ Harvey Tool: Acrylic, Acetal, Delrin, Nylon 6, Nylon 6/6, PEEK ฯลฯ (ไม่เติมสาร, Rockwell R 100–150) ความเร็วตัด <b>800–1200 SFM (ประมาณ 244–366 m/min)</b> เครื่องคำนวณใช้ค่ากลาง 305 m/min · เก็บผิว: ae 0.10D, ap 3D · กึ่งหยาบ: ae 0.35D, ap 1D · fz เป็นของ<b>ดอกไม่เคลือบ</b> ผู้ผลิตระบุว่าดอกเคลือบอาจใช้ค่าเท่าเดิมหรือต่ำกว่า · ค่า fz ตรวจเทียบกับตารางต้นฉบับ HAT2 (กลุ่ม Nylon 6 ไม่เติมสาร, Rockwell R 100–150) แล้ว · ไนลอนสีฟ้าที่มีสารหล่อลื่น (เช่น Nylatron, Nyoil) อยู่ในกลุ่มความเร็วตัดเดียวกันในตารางต้นฉบับ</p>';
+      var rowsN=NY.D.map(function(D,i){var f1=NY.fin[i], f2=NY.semi[i]; return [trim(D,2),trim(f1,4),(f1/D*100).toFixed(2)+'%',trim(f2,4),(f2/D*100).toFixed(2)+'%',fmt(1000*304.8/(Math.PI*D),0)];});
+      h+=tbl(['D (mm)','fz เก็บผิว (mm/tooth)','fz/D','fz กึ่งหยาบ (mm/tooth)','fz/D','n ที่ Vc 305 (rpm)'],rowsN);
+      h+='<p class="refp">คอลัมน์สุดท้ายแสดงรอบที่ต้องใช้ถ้าตั้ง Vc 305 m/min ถ้าเกินเพดานรอบเครื่องของเรา (19,200 rpm) เครื่องคำนวณจะลดรอบและ Vc ให้เอง ดอกประมาณ 5 mm ขึ้นไปจึงจะถึงช่วง 244 m/min ได้ภายในเพดานนี้</p>';
+    }
+    h+='<h3 class="ref">ตาราง E · ตัวคูณลดค่าตามระยะยื่นดอก</h3><p class="refp">OSG ระบุว่าตารางใช้ได้ถึงระยะยื่น 4 เท่าของ D และให้ลด speed, feed และความลึกเมื่อยื่นยาวกว่านั้น แต่ไม่ได้ระบุตัวเลข ตัวคูณด้านล่างเป็น<b>หลักปฏิบัติทั่วไป ไม่ได้มาจากแคตตาล็อก</b> ควรปรับตามผลทดลองจริง ตัวคูณความปลอดภัยของ Vc (70/85/100%) เป็นหลักปฏิบัติเช่นกัน ใช้ค่าที่ต่ำกว่าระหว่างตัวคูณนี้กับตัวคูณระยะยื่น ไม่คูณซ้อน และไม่ลด fz</p>';
+    h+=tbl(['ระยะยื่น L/D','ตัวคูณ Vc','ตัวคูณ fz','ระดับเตือน'],[['ไม่เกิน 4D','100%','100%','—'],['4–5D','90%','80%','เตือน'],['5–6D','80%','65%','เตือน'],['6–8D','70%','50%','อันตราย'],['เกิน 8D','60%','40%','อันตราย']]);
+    var mrows=[]; Array.prototype.forEach.call($('mat').options,function(o){ if(o.value!=='custom') mrows.push([o.textContent,o.getAttribute('data-h'),BANDS[+o.value].name]); });
+    h+='<h3 class="ref">ตาราง F · วัสดุและช่วงความแข็งที่ใช้เลือกตาราง</h3><p class="refp">ความแข็งเป็นค่าทั่วไปของวัสดุแต่ละเกรด ควรตรวจจากใบรับรองวัสดุหรือวัดจริงก่อนเลือกช่วง</p>';
+    h+=tbl(['วัสดุ','ความแข็งโดยประมาณ','ช่วงที่ใช้ในตาราง OSG'],mrows);
+    h+='<h3 class="ref">สูตรและเกณฑ์เตือน</h3><p class="refp">n = 1000·Vc/(π·Deff) · Vf = fz·z·n · chip thinning k = 2√(r − r²) เมื่อ r = ae/D &lt; 0.5 · ดอกบอล Deff = 2√(ap(D − ap)) · ดอกรัศมีมุม Deff = D − 2r + 2√(2r·ap − ap²) เมื่อ ap &lt; r · scallop = R − √(R² − (ae/2)²) · เตือนเมื่อ Vc นอกช่วงแนะนำ (อันตรายเกินขอบบน 15%), ความหนาเศษหนากว่าค่าแนะนำ 20% (อันตราย 50%) หรือบางกว่า 40% (อันตราย 65%), ap ลึกกว่าแคตตาล็อก (อันตรายเกิน 50%)</p>';
+    h+='<h3 class="ref">เอกสารต้นฉบับ</h3><ul class="refp src">'+
+      '<li>OSG End Mill Technical หน้า 1348 · A Brand AE-MS-H &amp; AE-CR-MS-H Side Milling: <a href="'+SRC.sq+'" target="_blank" rel="noopener">'+SRC.sq+'</a></li>'+
+      '<li>OSG End Mill Technical หน้า 1467–1468 · A Brand AE-BM-H (ดอกบอล 4 ฟัน): <a href="'+SRC.bm+'" target="_blank" rel="noopener">'+SRC.bm+'</a></li>'+
+      '<li>OSG End Mill Technical หน้า 1461 · A Brand AE-BD-H (ดอกบอล 2 ฟัน): <a href="'+SRC.bd+'" target="_blank" rel="noopener">'+SRC.bd+'</a></li>'+
+      '<li>OSG List 8540 · ขนาดและจำนวนฟันของ AE-MS-H: <a href="'+SRC.l8540+'" target="_blank" rel="noopener">'+SRC.l8540+'</a></li>'+
+      '<li>Harvey Tool · Speeds &amp; Feeds ของ End Mills for Plastics (3 Flute High Helix Finishers, กลุ่ม Nylon 6): <a href="'+SRC.harvey+'" target="_blank" rel="noopener">'+SRC.harvey+'</a></li>'+
+      '<li>Cast Nylons Limited (NYCAST) · Machining Guidelines (ดอกกัดต้องคม มุมเรคบวก ระบายความร้อน อบคลายเครียด): <a href="'+SRC.nycast+'" target="_blank" rel="noopener">'+SRC.nycast+'</a></li>'+
+      '<li>Boedeker Plastics · Plastic Milling Machining Guidelines (ดอก 2–4 ฟัน, เกลียว 30–45°, ลมเป่า): <a href="'+SRC.boedeker+'" target="_blank" rel="noopener">'+SRC.boedeker+'</a></li></ul>';
+    $('refTables').innerHTML=h;
+  }
+  function view(v){ $('viewCalc').classList.toggle('hidden',v!=='calc'); $('viewRef').classList.toggle('hidden',v!=='ref');
+    $('tabCalc').setAttribute('aria-pressed',v==='calc'); $('tabRef').setAttribute('aria-pressed',v==='ref');
+    if(v==='ref'){ $('refBand').value=$('band').value; renderRef(); } window.scrollTo(0,0); }
+  $('tabCalc').addEventListener('click',function(){view('calc')});
+  $('tabRef').addEventListener('click',function(){view('ref')});
+  $('refBand').addEventListener('change',renderRef);
+  $('printRef').addEventListener('click',function(){ try{window.print()}catch(e){} });
+  $('band').value=$('mat').value;
+  aeShow(); fill(true); setMode(1);
+})();
+</script>
+</body>
+</html>

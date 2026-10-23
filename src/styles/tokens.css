@@ -1,0 +1,160 @@
+/* Hallmark · macrostructure: Narrative Workflow · tone: technical · anchor hue: royal-blue */
+/* Hallmark · pre-emit critique: P5 H4 E5 S4 R4 V5 · contrast: pass · nav: N1 · footer: Ft2 · mobile: pass */
+/* Theme: custom (paper #F4F5F7 · ink #2E3440 · ink-2 #6B7280 · accent #4C6FFF · Noto Sans Thai + system Thai body) */
+
+:root {
+  box-sizing: border-box;
+
+  /* Cool grey surfaces (light) */
+  --color-paper: #F4F5F7;
+  --color-paper-2: #FFFFFF;
+  --color-ink: #2E3440;
+  --color-ink-2: #6B7280;
+  --color-rule: #DCE0E6;
+  --color-accent: #4C6FFF;
+  --color-accent-ink: #FFFFFF;
+  --color-focus: #4C6FFF;
+
+  /* Legacy aliases consumed by components */
+  --bg: var(--color-paper);
+  --panel: #FFFFFF;
+  --panel-2: var(--color-paper-2);
+  --ink: var(--color-ink);
+  --ink-2: var(--color-ink-2);
+  --line: var(--color-rule);
+  --accent: var(--color-accent);
+  --accent-ink: var(--color-accent-ink);
+
+  /* Readout console: navy ink, paper numerals */
+  --readout-bg: #2E3440;
+  --readout-ink: #F4F5F7;
+  --readout-dim: #9AA1AF;
+
+  /* Status tones */
+  --warn-bg: #FFF6E3;
+  --warn-ink: #7A5A00;
+  --warn-line: #E3D3A8;
+  --bad-bg: #FDECEC;
+  --bad-ink: #A83232;
+  --bad-line: #EFBFBF;
+  --ok-bg: #E8F4EE;
+  --ok-ink: #2C7A5B;
+  --ok-line: #BDDDCC;
+
+  /* Type */
+  --font-display: "Noto Sans Thai", "IBM Plex Sans Thai", "Anuphan", system-ui, "Segoe UI", "Leelawadee UI", sans-serif;
+  --font-body: "Noto Sans Thai", "IBM Plex Sans Thai", "Anuphan", system-ui, "Segoe UI", "Leelawadee UI", sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --font: var(--font-body);
+
+  /* 4pt spacing scale */
+  --space-3xs: 0.25rem;
+  --space-2xs: 0.5rem;
+  --space-xs: 0.75rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  --space-2xl: 4.5rem;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-short: 150ms;
+
+  --radius-card: 0.75rem;
+  --radius-input: 0.5rem;
+}
+
+:root[data-theme='dark'] {
+  --color-paper: #171B23;
+  --color-paper-2: #232936;
+  --color-ink: #F4F5F7;
+  --color-ink-2: #9AA3B2;
+  --color-rule: #333B4D;
+  --color-accent: #7D96FF;
+  --color-accent-ink: #141927;
+  --color-focus: #7D96FF;
+
+  --panel: #1E2430;
+  --panel-2: var(--color-paper-2);
+  --readout-bg: #10141B;
+  --readout-ink: #E8ECF3;
+  --readout-dim: #8B93A5;
+
+  --warn-bg: #26200F;
+  --warn-ink: #E3C893;
+  --warn-line: #57503F;
+  --bad-bg: #2A1518;
+  --bad-ink: #DFB3AC;
+  --bad-line: #574040;
+  --ok-bg: #10201B;
+  --ok-ink: #A9CFC9;
+  --ok-line: #3D4F4C;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  scroll-padding-top: env(safe-area-inset-top, 0px);
+  overflow-x: clip;
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font);
+  font-size: 17px;
+  line-height: 1.6;
+  overflow-x: clip;
+}
+
+input,
+select,
+button,
+summary {
+  font: inherit;
+}
+
+input:focus-visible,
+select:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+button:disabled,
+input:disabled,
+select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}

@@ -1,0 +1,665 @@
+/* Hallmark · macrostructure: Narrative Workflow · F4 step-sequence knobs: numbering=1.0/2.0/3.0, layout=vertical, connector=line · N1 · Ft2 */
+/* Hallmark · pre-emit critique: P5 H4 E5 S4 R4 V5 · contrast: pass (40-41) · nav: N1 · footer: Ft2 · slop: pass (42-45) · honest: pass (46) · chrome: pass (47) · tokens: pass (48) · responsive: pass (49) · icons: pass (30) · mobile: pass (34, 49, 50-57) */
+@import "tailwindcss";
+@import "./styles/tokens.css";
+
+/* Cool paper wash: subtle top glow in accent, ≤5% footprint */
+.cnc-wash {
+  background:
+    radial-gradient(60rem 18rem at 50% -8rem, oklch(88% 0.06 270 / 0.5), transparent 70%),
+    var(--color-paper);
+}
+:root[data-theme='dark'] .cnc-wash {
+  background:
+    radial-gradient(60rem 18rem at 50% -8rem, oklch(35% 0.06 270 / 0.5), transparent 70%),
+    var(--color-paper);
+}
+
+/* Flow: stepper + panels + bottom pager (app-like on mobile) */
+.cnc-flow {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.cnc-stepbar {
+  display: grid;
+  gap: 2px;
+}
+@media (max-width: 59.98rem) {
+  #cnc-stepbar-slot .cnc-stepbar {
+    padding-block: var(--space-2xs) var(--space-xs);
+  }
+}
+@media (min-width: 60rem) {
+  #cnc-stepbar-slot .cnc-stepbar {
+    padding-block: var(--space-xs);
+  }
+  #cnc-stepbar-slot .cnc-stepbar__name {
+    font-size: 0.95rem;
+  }
+}
+.cnc-stepper {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3xs);
+}
+.cnc-stepper__item {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-3xs);
+}
+.cnc-stepper__item:last-child {
+  flex: 0 0 auto;
+}
+.cnc-stepper__dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper);
+  color: var(--color-ink-2);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color var(--dur-short) var(--ease-out),
+    background-color var(--dur-short) var(--ease-out),
+    color var(--dur-short) var(--ease-out);
+}
+.cnc-stepper__dot:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+.cnc-stepper__dot--active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+.cnc-stepper__dot--done {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+.cnc-stepper__bar {
+  flex: 1 1 0;
+  min-width: var(--space-xs);
+  height: 2px;
+  border-radius: 1px;
+  background: var(--color-rule);
+}
+.cnc-stepbar__name {
+  margin: 0;
+  min-height: 1lh;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 59.98rem) {
+  .cnc-flow > .cnc-stepbar {
+    display: none;
+  }
+}
+@media (min-width: 60rem) {
+  #cnc-stepbar-slot {
+    display: none;
+  }
+}
+
+/* Workbench: single column, sections split by hairline dividers */
+.cnc-workbench {
+  display: block;
+  min-width: 0;
+}
+.cnc-step {
+  min-width: 0;
+  padding-block: var(--space-md);
+}
+.cnc-step:first-child {
+  padding-top: 0;
+}
+.cnc-step + .cnc-step {
+  border-top: 1px solid var(--color-rule);
+}
+@media (min-width: 40rem) {
+  .cnc-step {
+    padding-block: var(--space-lg);
+  }
+}
+@media (max-width: 59.98rem) {
+  .cnc-step--hidden-mobile {
+    display: none;
+  }
+}
+
+.cnc-pager {
+  position: sticky;
+  bottom: calc(var(--space-sm) + env(safe-area-inset-bottom, 0px));
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--color-paper) 88%, transparent);
+  backdrop-filter: blur(8px);
+  padding: var(--space-xs);
+  margin-top: var(--space-sm);
+}
+.cnc-pager .cnc-pager__btn {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 2.5rem;
+  min-height: 0;
+  padding: 0;
+  border-radius: 999px;
+}
+.cnc-pager .cnc-pager__btn span[aria-hidden] {
+  width: 0;
+  height: 0;
+  border-top: 0.42rem solid transparent;
+  border-bottom: 0.42rem solid transparent;
+}
+.cnc-pager .cnc-pager__btn--prev span[aria-hidden] {
+  border-right: 0.62rem solid currentColor;
+  margin-left: -0.15rem;
+}
+.cnc-pager .cnc-pager__btn--next span[aria-hidden] {
+  border-left: 0.62rem solid currentColor;
+  margin-right: -0.15rem;
+}
+.cnc-pager .cnc-pager__btn--next span[aria-hidden]:not(:empty) {
+  width: auto;
+  height: auto;
+  border: 0;
+  margin-right: 0;
+  font-size: 1rem;
+  line-height: 1;
+}
+@media (min-width: 60rem) {
+  .cnc-pager {
+    position: static;
+  }
+}
+/* Material picker: < name > pill + bottom-up 3-col grid sheet */
+.cnc-mat {
+  display: flex;
+  align-items: stretch;
+}
+.cnc-mat__pill {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: var(--space-2xs) var(--space-sm);
+  cursor: pointer;
+  transition: border-color var(--dur-short) var(--ease-out),
+    background-color var(--dur-short) var(--ease-out);
+}
+.cnc-mat__pill:hover {
+  border-color: var(--color-accent);
+}
+.cnc-mat__pill:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+.cnc-mat__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cnc-mat__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  background: var(--color-paper);
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+.cnc-mat__sheet {
+  width: 100%;
+  height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--color-paper);
+  padding: 0 var(--space-sm) calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
+  display: grid;
+  gap: var(--space-sm);
+  align-content: start;
+}
+.cnc-mat__top {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: color-mix(in srgb, var(--color-paper) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--color-rule);
+  margin-inline: calc(-1 * var(--space-sm));
+  padding: var(--space-2xs) var(--space-sm);
+}
+.cnc-mat__back {
+  flex: 0 0 auto;
+  padding-inline: var(--space-sm);
+}
+.cnc-mat__title {
+  flex: 1 1 0;
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cnc-mat__spacer {
+  flex: 0 0 auto;
+  width: 4.5rem;
+}
+.cnc-mat__group {
+  display: grid;
+  gap: var(--space-2xs);
+}
+.cnc-mat__hrc {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-2);
+}
+.cnc-mat__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2xs);
+}
+.cnc-mat__card {
+  min-height: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-input);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.35;
+  padding: var(--space-xs) var(--space-2xs);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  transition: border-color var(--dur-short) var(--ease-out),
+    background-color var(--dur-short) var(--ease-out),
+    color var(--dur-short) var(--ease-out);
+}
+.cnc-mat__card:hover {
+  border-color: var(--color-accent);
+}
+.cnc-mat__card--active {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+.cnc-pager__btn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.cnc-pager__count {
+  margin: 0;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
+
+/* Narrative workflow: versioned stage markers (F4), hanging heads (S2) */
+.cnc-stage {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--color-accent);
+  font-variant-numeric: tabular-nums;
+}
+/* N1 · wordmark + 2 links */
+.cnc-navlink {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--space-xs);
+  border: 0;
+  border-radius: var(--radius-input);
+  background: transparent;
+  color: var(--color-ink-2);
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--dur-short) var(--ease-out),
+    background-color var(--dur-short) var(--ease-out);
+}
+.cnc-navlink:hover {
+  color: var(--color-ink);
+}
+.cnc-navlink--active {
+  color: var(--color-accent);
+}
+.cnc-navlink:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.cnc-display {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  text-wrap: balance;
+}
+
+/* Fields: shared 48px touch height, named tokens only */
+.cnc-field {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-input);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  padding: var(--space-2xs) var(--space-xs);
+  font-size: 1rem;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  transition: border-color var(--dur-short) var(--ease-out),
+    background-color var(--dur-short) var(--ease-out),
+    box-shadow var(--dur-short) var(--ease-out);
+}
+.cnc-field:hover {
+  border-color: var(--color-accent);
+}
+.cnc-field:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+.cnc-field:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+  border-color: var(--color-accent);
+}
+.cnc-field::placeholder {
+  color: var(--color-ink-2);
+  opacity: 0.75;
+}
+select.cnc-field {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.25rem;
+  cursor: pointer;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--color-ink-2) 50%),
+    linear-gradient(135deg, var(--color-ink-2) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.15rem) center,
+    calc(100% - 0.8rem) center;
+  background-size: 0.35rem 0.35rem;
+  background-repeat: no-repeat;
+}
+select.cnc-field:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.cnc-field--edited {
+  border-color: var(--color-accent);
+  background: var(--color-paper);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+.cnc-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  min-height: 1lh;
+}
+.cnc-hint {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--color-ink-2);
+  min-height: 1lh;
+}
+
+/* Icon-only button: fixed square, perfect circle */
+.cnc-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid var(--color-accent);
+  background: transparent;
+  color: var(--color-accent);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--dur-short) var(--ease-out),
+    color var(--dur-short) var(--ease-out),
+    border-color var(--dur-short) var(--ease-out);
+}
+.cnc-iconbtn:hover {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+.cnc-iconbtn:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+/* Buttons: one signal (background fade), 44px floor, nowrap labels */
+.cnc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+  min-height: 48px;
+  padding: var(--space-2xs) var(--space-sm);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--dur-short) var(--ease-out),
+    color var(--dur-short) var(--ease-out),
+    border-color var(--dur-short) var(--ease-out);
+}
+.cnc-btn:active {
+  transform: translateY(1px);
+}
+.cnc-btn--primary {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  border: 1px solid var(--color-accent);
+}
+.cnc-btn--primary:hover {
+  background: var(--color-accent-ink);
+  color: var(--color-accent);
+}
+.cnc-btn--ghost {
+  background: transparent;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+}
+.cnc-btn--ghost:hover {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+
+/* Mode tabs: GSAP sliding pill; tabs are labels above it */
+.cnc-tabs {
+  position: relative;
+  display: flex;
+  border-radius: 999px;
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper-2);
+  padding: 3px;
+  gap: 3px;
+  isolation: isolate;
+}
+.cnc-tabs__pill {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  bottom: 3px;
+  width: 0;
+  border-radius: 999px;
+  background: var(--color-accent);
+  z-index: 0;
+  pointer-events: none;
+}
+.cnc-tab {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-ink-2);
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: color var(--dur-short) var(--ease-out);
+}
+.cnc-tab:hover {
+  color: var(--color-ink);
+}
+.cnc-tab[aria-pressed='true'] {
+  color: var(--color-accent-ink);
+}
+.cnc-tab:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Readout console */
+.cnc-console {
+  background: var(--readout-bg);
+  color: var(--readout-ink);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-rule);
+}
+.cnc-console__fig {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.cnc-fade {
+  animation: cncfade var(--dur-short) var(--ease-out);
+}
+
+@keyframes cncfade {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Status notes: icon + text, never colour alone */
+.cnc-note {
+  border-radius: var(--radius-input);
+  border: 1px solid var(--color-rule);
+  padding: var(--space-xs) var(--space-sm);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+.cnc-note--bad {
+  border-color: var(--bad-line);
+  background: var(--bad-bg);
+  color: var(--bad-ink);
+}
+.cnc-note--ok {
+  border-color: var(--ok-line);
+  background: var(--ok-bg);
+  color: var(--ok-ink);
+}
+.cnc-note--plain {
+  background: var(--color-paper-2);
+  color: var(--color-ink-2);
+}
+.cnc-note--warn {
+  border-color: var(--warn-line);
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+}
+
+/* Reference tables: collapse to cards on mobile */
+.cnc-tblwrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-input);
+}
+.cnc-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.cnc-tbl th,
+.cnc-tbl td {
+  padding: var(--space-2xs) var(--space-xs);
+  text-align: right;
+  white-space: nowrap;
+}
+.cnc-tbl th:first-child,
+.cnc-tbl td:first-child {
+  text-align: left;
+}
+.cnc-tbl thead th {
+  background: var(--color-paper-2);
+  font-weight: 700;
+}
+.cnc-tbl tbody tr + tr td {
+  border-top: 1px solid var(--color-rule);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cnc-fade {
+    animation-duration: 0.01ms;
+  }
+}

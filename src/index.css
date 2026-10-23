@@ -190,7 +190,7 @@
 }
 @media (min-width: 60rem) {
   .cnc-pager {
-    position: static;
+    display: none;
   }
 }
 /* Material picker: < name > pill + bottom-up 3-col grid sheet */
@@ -450,6 +450,15 @@ select.cnc-field:disabled {
   font-weight: 600;
   color: var(--color-ink);
   min-height: 1lh;
+}
+.cnc-label--icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.cnc-label__icon {
+  flex-shrink: 0;
+  color: var(--color-ink-2);
 }
 .cnc-hint {
   font-size: 0.82rem;

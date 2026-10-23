@@ -11,7 +11,27 @@ import type { BallOp } from '../../data/osg-ball';
 import Readout from './Readout';
 import WarningsList from './WarningsList';
 import CycleTime from './CycleTime';
-
+import {
+  ArrowDownWideNarrow,
+  ArrowLeftRight,
+  ArrowUpDown,
+  ClipboardList,
+  Cog,
+  Droplet,
+  Gauge,
+  History,
+  Layers,
+  Move3d,
+  Percent,
+  RotateCw,
+  Ruler,
+  Scale,
+  ShieldCheck,
+  Timer,
+  Wrench,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react';
 const DEFAULTS = {
   D: '6',
   z: '4',
@@ -57,6 +77,15 @@ function keepNum(v: string, intOnly = false): string {
 }
 
 const STEPS = ['วัสดุกับดอก', 'ค่าตัด', 'เครื่องจักร', 'ผลลัพธ์'] as const;
+
+function FieldLabel({ icon: Icon, htmlFor, children }: { icon: LucideIcon; htmlFor: string; children: React.ReactNode }) {
+  return (
+    <label htmlFor={htmlFor} className="cnc-label cnc-label--icon">
+      <Icon size={15} strokeWidth={2.25} aria-hidden="true" className="cnc-label__icon" />
+      <span>{children}</span>
+    </label>
+  );
+}
 
 export default function Calculator() {
   const [step, setStep] = useState(0);
@@ -443,7 +472,7 @@ export default function Calculator() {
             </div>
             {currentMat.value === 'custom' || +currentMat.value >= 4 ? (
               <div className="flex min-w-0 flex-col gap-1 sm:col-span-2">
-                <label className={label} htmlFor="band">ช่วงความแข็ง</label>
+                <FieldLabel icon={Layers} htmlFor="band">ช่วงความแข็ง</FieldLabel>
                 <select id="band" className={field} value={band} onChange={(e) => onBand(e.target.value)}>
                   {BAND_OPTIONS.map((b) => (
                     <option key={b.value} value={b.value}>{b.label}</option>
@@ -474,13 +503,13 @@ export default function Calculator() {
             </div>
             {!plastic && tool === 'cr' ? (
               <div className="flex min-w-0 flex-col gap-1">
-                <label className={label} htmlFor="r">รัศมีมุม r (mm)</label>
+              <FieldLabel icon={Scale} htmlFor="r">รัศมีมุม r (mm)</FieldLabel>
                 <input id="r" className={field} type="text" inputMode="decimal" value={r} onChange={(e) => { setR(keepNum(e.target.value)); setPreset(''); setEditedVc(false); setEditedFz(false); }} />
               </div>
             ) : null}
             {!plastic && tool === 'ball' ? (
               <div className="flex min-w-0 flex-col gap-1">
-                <label className={label} htmlFor="op">ลักษณะงาน / ตารางดอกบอล</label>
+              <FieldLabel icon={ClipboardList} htmlFor="op">ลักษณะงาน / ตารางดอกบอล</FieldLabel>
                 <select id="op" className={field} value={op} onChange={(e) => { setOp(e.target.value as BallOp); setPreset(''); setEditedVc(false); setEditedFz(false); }}>
                   <option value="finish2">งานเก็บผิว · ดอก 2 ฟัน (AE-BD-H)</option>
                   <option value="finish">งานเก็บผิว · ดอก 4 ฟัน (AE-BM-H)</option>
@@ -489,21 +518,21 @@ export default function Calculator() {
               </div>
             ) : null}
             <div className="flex min-w-0 flex-col gap-1">
-              <label className={label} htmlFor="D">เส้นผ่านศูนย์กลางดอก D (mm)</label>
+              <FieldLabel icon={Wrench} htmlFor="D">เส้นผ่านศูนย์กลางดอก D (mm)</FieldLabel>
               <input id="D" className={field} type="text" inputMode="decimal" value={D} onChange={(e) => { setD(keepNum(e.target.value)); setPreset(''); setEditedVc(false); setEditedFz(false); }} />
             </div>
             <div className="flex min-w-0 flex-col gap-1">
-              <label className={label} htmlFor="z">จำนวนฟัน z</label>
+              <FieldLabel icon={Cog} htmlFor="z">จำนวนฟัน z</FieldLabel>
               <input id="z" className={field} type="text" inputMode="numeric" pattern="[0-9]*" value={z} onChange={(e) => setZ(keepNum(e.target.value, true))} />
               {effTool === 'ball' ? <small className={small}>ค่าแนะนำมาจากดอกบอล 2/4 ฟัน ถ้าจำนวนฟันต่างจากนี้ fz ต่อฟันใช้ค่าเดิม แต่ F เปลี่ยนตามจำนวนฟัน</small> : null}
             </div>
             <div className="flex min-w-0 flex-col gap-1">
-              <label className={label} htmlFor="L">ระยะยื่นดอก L (mm)</label>
+              <FieldLabel icon={Move3d} htmlFor="L">ระยะยื่นดอก L (mm)</FieldLabel>
               <input id="L" className={field} type="text" inputMode="decimal" placeholder="เว้นว่าง = ไม่เกิน 4D" value={L} onChange={(e) => { setL(keepNum(e.target.value)); setPreset(''); setEditedVc(false); setEditedFz(false); }} />
               {ldText ? <small className={small}>{ldText}</small> : null}
             </div>
             <div className="flex min-w-0 flex-col gap-1">
-              <label className={label} htmlFor="coat">สารเคลือบดอก (ข้อมูลประกอบ)</label>
+              <FieldLabel icon={Droplet} htmlFor="coat">สารเคลือบดอก (ข้อมูลประกอบ)</FieldLabel>
               <select id="coat" className={field} value={coat} onChange={(e) => setCoat(e.target.value)}>
                 <option value="">ไม่ทราบ</option>
                 <option value="tialn">TiAlN</option>
@@ -515,7 +544,7 @@ export default function Calculator() {
               <small className={small}>ไม่ปรับค่าแนะนำ ใช้เตือนเมื่อไม่เหมาะกับช่วงความแข็ง</small>
             </div>
             <div className="flex min-w-0 flex-col gap-1 sm:col-span-2">
-              <label className={label} htmlFor="preset">ค่าจากรายงาน (ตาราง 3.1)</label>
+              <FieldLabel icon={History} htmlFor="preset">ค่าจากรายงาน (ตาราง 3.1)</FieldLabel>
               <select id="preset" className={field} value={preset} onChange={(e) => onPreset(e.target.value)}>
                 <option value="">— ไม่ใช้ —</option>
                 {PRESETS.map((p) => (
@@ -532,7 +561,7 @@ export default function Calculator() {
           <h2 id="cut-h" className="cnc-display mt-1 text-xl">ระยะกินกับความเร็ว</h2>
           <div className="mt-3 grid grid-cols-1 gap-x-3 gap-y-3 sm:grid-cols-2">
             <div className="flex min-w-0 flex-col gap-1">
-              <label className={label} htmlFor="aeIn">ระยะกินข้างที่ใช้จริง ae</label>
+              <FieldLabel icon={ArrowLeftRight} htmlFor="aeIn">ระยะกินข้างที่ใช้จริง ae</FieldLabel>
               <div className="flex min-w-0 gap-1.5">
                 <input
                   id="aeIn"
@@ -559,12 +588,12 @@ export default function Calculator() {
               ) : null}
             </div>
             <div className="flex min-w-0 flex-col gap-1">
-              <label className={label} htmlFor="ap">ความลึกต่อชั้น ap (mm)</label>
+              <FieldLabel icon={ArrowUpDown} htmlFor="ap">ความลึกต่อชั้น ap (mm)</FieldLabel>
               <input id="ap" className={field} type="text" inputMode="decimal" value={ap} onChange={(e) => { setAp(keepNum(e.target.value)); setPreset(''); setEditedVc(false); setEditedFz(false); }} />
               <small className={small}>ใช้ตรวจกับเงื่อนไขแคตตาล็อกและนับจำนวนชั้น</small>
             </div>
             <div className="flex min-w-0 flex-col gap-1">
-              <label className={label} htmlFor="sf">ตัวคูณความปลอดภัยของ Vc</label>
+              <FieldLabel icon={ShieldCheck} htmlFor="sf">ตัวคูณความปลอดภัยของ Vc</FieldLabel>
               <select id="sf" className={field} value={sf} onChange={(e) => { setSf(e.target.value); setPreset(''); setEditedVc(false); setEditedFz(false); }}>
                 <option value="0.7">เริ่มทดลอง 70%</option>
                 <option value="0.85">ระมัดระวัง 85%</option>
@@ -576,28 +605,28 @@ export default function Calculator() {
             {mode === 1 ? (
               <>
                 <div className="flex min-w-0 flex-col gap-1">
-                  <label className={label} htmlFor="Vc">{effTool === 'sq' ? 'ความเร็วตัด Vc (m/min)' : 'ความเร็วตัดที่จุดสัมผัสจริง Vc (m/min)'}</label>
+                  <FieldLabel icon={Gauge} htmlFor="Vc">{effTool === 'sq' ? 'ความเร็วตัด Vc (m/min)' : 'ความเร็วตัดที่จุดสัมผัสจริง Vc (m/min)'}</FieldLabel>
                   <input id="Vc" className={field + ' ' + (editedVc ? editedCls : '')} type="text" inputMode="decimal" value={Vc} onChange={(e) => { setVc(keepNum(e.target.value)); setEditedVc(true); setPreset(''); }} />
                   {hVc ? <small className={small}>{hVc}</small> : null}
                 </div>
                 <div className="flex min-w-0 flex-col gap-1">
-                  <label className={label} htmlFor="fz">fz ที่จะตั้ง (mm/tooth)</label>
+                  <FieldLabel icon={Zap} htmlFor="fz">fz ที่จะตั้ง (mm/tooth)</FieldLabel>
                   <input id="fz" className={field + ' ' + (editedFz ? editedCls : '')} type="text" inputMode="decimal" value={fz} onChange={(e) => { setFz(keepNum(e.target.value)); setEditedFz(true); setPreset(''); }} />
                   {hfz ? <small className={small}>{hfz}</small> : null}
                 </div>
                 <div className="flex min-w-0 flex-col gap-1">
-                  <label className={label} htmlFor="Vc0">Vc เดิมที่ใช้อยู่ (m/min, ไม่บังคับ)</label>
+                  <FieldLabel icon={Timer} htmlFor="Vc0">Vc เดิมที่ใช้อยู่ (m/min, ไม่บังคับ)</FieldLabel>
                   <input id="Vc0" className={field} type="text" inputMode="decimal" placeholder="ใช้เตือนอายุดอก" value={Vc0} onChange={(e) => setVc0(keepNum(e.target.value))} />
                 </div>
               </>
             ) : (
               <>
                 <div className="flex min-w-0 flex-col gap-1">
-                  <label className={label} htmlFor="S">รอบที่ตั้งอยู่ S (rpm)</label>
+                  <FieldLabel icon={RotateCw} htmlFor="S">รอบที่ตั้งอยู่ S (rpm)</FieldLabel>
                   <input id="S" className={field} type="text" inputMode="decimal" value={S} onChange={(e) => setS(keepNum(e.target.value))} />
                 </div>
                 <div className="flex min-w-0 flex-col gap-1">
-                  <label className={label} htmlFor="F">อัตราป้อนที่ตั้งอยู่ F (mm/min)</label>
+                  <FieldLabel icon={ArrowDownWideNarrow} htmlFor="F">อัตราป้อนที่ตั้งอยู่ F (mm/min)</FieldLabel>
                   <input id="F" className={field} type="text" inputMode="decimal" value={F} onChange={(e) => setF(keepNum(e.target.value))} />
                 </div>
               </>
@@ -622,15 +651,15 @@ export default function Calculator() {
           <h2 id="lim-h" className="cnc-display mt-1 text-xl">ขีดจำกัดกับเวลา</h2>
           <div className="mt-3 grid grid-cols-1 gap-x-3 gap-y-3 sm:grid-cols-2">
             <div className="flex min-w-0 flex-col gap-1">
-              <label className={label} htmlFor="maxrpm">รอบสูงสุดของเครื่อง (rpm)</label>
+              <FieldLabel icon={Gauge} htmlFor="maxrpm">รอบสูงสุดของเครื่อง (rpm)</FieldLabel>
               <input id="maxrpm" className={field} type="text" inputMode="decimal" value={maxrpm} onChange={(e) => setMaxrpm(keepNum(e.target.value))} />
             </div>
             <div className="flex min-w-0 flex-col gap-1">
-              <label className={label} htmlFor="cap">เพดานรอบที่โรงงานกำหนด (%)</label>
+              <FieldLabel icon={Percent} htmlFor="cap">เพดานรอบที่โรงงานกำหนด (%)</FieldLabel>
               <input id="cap" className={field} type="text" inputMode="decimal" value={cap} onChange={(e) => setCap(keepNum(e.target.value))} />
             </div>
             <div className="flex min-w-0 flex-col gap-1 sm:col-span-2">
-              <label className={label} htmlFor="maxf">อัตราป้อนสูงสุด (mm/min)</label>
+              <FieldLabel icon={ArrowDownWideNarrow} htmlFor="maxf">อัตราป้อนสูงสุด (mm/min)</FieldLabel>
               <input id="maxf" className={field} type="text" inputMode="decimal" placeholder="เว้นว่างถ้ายังไม่ทราบ" value={maxf} onChange={(e) => setMaxf(keepNum(e.target.value))} />
               <small className={small}>ถ้ากรอก จะเตือนเมื่อ F เกินค่านี้</small>
             </div>
@@ -640,19 +669,19 @@ export default function Calculator() {
           <h3 className="text-[0.95rem] font-semibold text-[var(--color-ink)]">เวลาเดินมีดเชิงทฤษฎี (งานปาดผิว)</h3>
           <div className="mt-2.5 grid grid-cols-1 gap-x-3 gap-y-2.5 sm:grid-cols-2">
             <div className="flex min-w-0 flex-col gap-1">
-              <label className={label} htmlFor="A">ความยาวแนวเดินมีด A (mm)</label>
+              <FieldLabel icon={Ruler} htmlFor="A">ความยาวแนวเดินมีด A (mm)</FieldLabel>
               <input id="A" className={field} type="text" inputMode="decimal" value={A} onChange={(e) => setA(keepNum(e.target.value))} />
             </div>
             <div className="flex min-w-0 flex-col gap-1">
-              <label className={label} htmlFor="B">ความกว้างผิวงาน B (mm)</label>
+              <FieldLabel icon={Ruler} htmlFor="B">ความกว้างผิวงาน B (mm)</FieldLabel>
               <input id="B" className={field} type="text" inputMode="decimal" value={B} onChange={(e) => setB(keepNum(e.target.value))} />
             </div>
             <div className="flex min-w-0 flex-col gap-1">
-              <label className={label} htmlFor="H">ความลึกรวมที่ต้องกัด H (mm)</label>
+              <FieldLabel icon={Layers} htmlFor="H">ความลึกรวมที่ต้องกัด H (mm)</FieldLabel>
               <input id="H" className={field} type="text" inputMode="decimal" placeholder="เว้นว่าง = 1 ชั้น" value={H} onChange={(e) => setH(keepNum(e.target.value))} />
             </div>
             <div className="flex min-w-0 flex-col gap-1">
-              <label className={label} htmlFor="F0">F เดิมเพื่อเทียบ (mm/min)</label>
+              <FieldLabel icon={Timer} htmlFor="F0">F เดิมเพื่อเทียบ (mm/min)</FieldLabel>
               <input id="F0" className={field} type="text" inputMode="decimal" placeholder="ไม่บังคับ" value={F0} onChange={(e) => setF0(keepNum(e.target.value))} />
             </div>
           </div>
